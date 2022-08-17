@@ -12,7 +12,7 @@ exports.ListLogs = async (req, res) => {
         });
 
         if (user.type !== 1) {
-            return res.send({
+            return res.status(400).send({
                 status: false,
                 message: "Bạn không có quyền thực hiện tác vụ này",
             });

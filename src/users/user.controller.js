@@ -37,9 +37,8 @@ exports.Signup = async (req, res) => {
     const result = userSchema.validate(req.body);
     if (result.error) {
       console.log(result.error.message);
-      return res.json({
+      return res.status(400).json({
         status: false,
-        status: 400,
         message: result.error.message,
       });
     }
@@ -50,7 +49,7 @@ exports.Signup = async (req, res) => {
     });
 
     if (user) {
-      return res.json({
+      return res.status(400).json({
         status: false,
         message: "Username đã được sử dụng",
       });
@@ -63,6 +62,7 @@ exports.Signup = async (req, res) => {
 
     delete result.value.confirmPassword;
     result.value.password = hash;
+    result.value.genToken = uuid();
 
     const newUser = new User(result.value);
     await newUser.save();
@@ -84,9 +84,8 @@ exports.Activate = async (req, res) => {
   try {
     const { username } = req.body;
     if (!username) {
-      return res.json({
+      return res.status(400).json({
         status: false,
-        status: 200,
         message: "Tài khoản chưa được kích hoạt!",
       });
     }
@@ -101,10 +100,9 @@ exports.Activate = async (req, res) => {
       });
     } else {
       if (user.active)
-        return res.send({
+        return res.status(200).send({
           status: false,
           message: "Tài khoản đã được kích hoạt",
-          status: 200,
         });
 
       user.active = true;
@@ -139,7 +137,7 @@ exports.Login = async (req, res) => {
 
     // NOT FOUND - Throw error
     if (!user) {
-      return res.status(404).json({
+      return res.status(400).json({
         status: false,
         message: "Tài khoản không tồn tại",
       });
@@ -165,19 +163,17 @@ exports.Login = async (req, res) => {
 
     //Generate Access token
 
-    const { error, token, refreshToken } = await generateJwt({ username: user.username, id: user.userId });
+    const { error, token, refreshToken } = await generateJwt({ username: user.username, id: user.userId, genToken: user.genToken });
     if (error) {
       return res.status(200).json({
         status: false,
         message: "Không thể tạo token vui lòng thử lại sau",
       });
     };
-    user.accessToken = token;
-    user.refreshToken = refreshToken;
     await user.save();
 
     //Success
-    return res.send({
+    return res.status(200).send({
       status: true,
       message: "Đăng nhập thành công",
       accessToken: token,
@@ -194,6 +190,14 @@ exports.Login = async (req, res) => {
 
 exports.RefreshToken = async (req, res) => {
   try {
+    const result = refreshTokenBodyValidation.validate(req.body);
+    if (result.error) {
+      console.log(result.error.message);
+      return res.status(400).json({
+        status: false,
+        message: result.error.message,
+      });
+    }
     const { id } = req.decoded;
     const user = await User.findOne({ userId: id });
     if (!user) {
@@ -202,15 +206,16 @@ exports.RefreshToken = async (req, res) => {
         message: "Tài khoản không tồn tại",
       });
     }
-
-    verifyRefreshToken(user.refreshToken).then(async ({ tokenDetails }) => {
-      const payload = { username: tokenDetails.username, id: tokenDetails.id }
+    const { refreshToken } = req.body;
+    console.log(refreshToken);
+    verifyRefreshToken(refreshToken).then(async ({ tokenDetails }) => {
+      const payload = { username: tokenDetails.username, id: tokenDetails.id, genToken: tokenDetails.genToken }
       const response = await generateOnlyJwt(payload);
       if (response.status) {
         return res.status(200).json({
           status: true,
           accessToken: response.token,
-          refreshToken: user.refreshToken,
+          refreshToken: refreshToken,
           message: "Tạo token thành công!",
         });
       }
@@ -245,7 +250,7 @@ exports.ResetPassword = async (req, res) => {
       resetPasswordExpires: { $gt: Date.now() },
     });
     if (!user) {
-      return res.send({
+      return res.status(400).send({
         status: false,
         message: "Password reset token is invalid or has expired.",
       });
@@ -263,7 +268,7 @@ exports.ResetPassword = async (req, res) => {
 
     await user.save();
 
-    return res.send({
+    return res.status(200).send({
       status: true,
       message: "Mật khẩu đã được thay đổi",
     });
@@ -291,7 +296,7 @@ exports.ChangePassword = async (req, res) => {
       userId: id
     });
     if (!user) {
-      return res.send({
+      return res.status(400).send({
         status: false,
         message: "Người dùng không tồn tại.",
       });
@@ -324,7 +329,7 @@ exports.ChangePassword = async (req, res) => {
 
     await user.save();
 
-    return res.send({
+    return res.status(200).send({
       status: true,
       message: "Mật khẩu đã được thay đổi",
     });
@@ -342,11 +347,9 @@ exports.Logout = async (req, res) => {
     const { id } = req.decoded;
 
     let user = await User.findOne({ userId: id });
-    user.accessToken = "";
-    user.refreshToken = "";
     await user.save();
 
-    return res.send({ status: true, message: "Đăng xuất thành công" });
+    return res.status(200).send({ status: true, message: "Đăng xuất thành công" });
   } catch (error) {
     console.error("user-logout-error", error);
     return res.stat(200).json({
@@ -361,7 +364,7 @@ exports.GetUserDetail = async (req, res) => {
     const { id } = req.decoded;
 
     let user = await User.findOne({ userId: id });
-    return res.send({
+    return res.status(200).send({
       status: true, data: {
         username: user.username,
         email: user.email,
@@ -371,7 +374,7 @@ exports.GetUserDetail = async (req, res) => {
     });
   } catch (error) {
     console.error("user-logout-error", error);
-    return res.stat(200).json({
+    return res.status(400).json({
       status: false,
       message: error.message,
     });
@@ -385,9 +388,8 @@ exports.EditUser = async (req, res) => {
     const result = EditUserSchema.validate(req.body);
     if (result.error) {
       console.log(result.error.message);
-      return res.json({
+      return res.status(400).json({
         status: false,
-        status: 400,
         message: result.error.message,
       });
     }
@@ -396,7 +398,7 @@ exports.EditUser = async (req, res) => {
       new: true
     }); // return data updated
 
-    return res.send({
+    return res.status(200).send({
       status: true, data: {
         fullname: user.fullname,
         phoneNumber: user.phoneNumber,

@@ -24,7 +24,7 @@ exports.ListBlackLists = async (req, res) => {
         });
 
         if (user.type !== 1) {
-            return res.send({
+            return res.status(400).send({
                 status: false,
                 message: "Bạn không có quyền thực hiện tác vụ này",
             });
@@ -78,7 +78,7 @@ exports.DetailBlackLists = async (req, res) => {
         });
 
         if (user.type !== 1) {
-            return res.send({
+            return res.status(400).send({
                 status: false,
                 message: "Bạn không có quyền thực hiện tác vụ này",
             });
@@ -92,7 +92,7 @@ exports.DetailBlackLists = async (req, res) => {
         }
         else {
             return res.status(200).json({
-                status: false, data: null
+                status: false, message: "Blacklist không tồn tại!"
             });
         }
     } catch (error) {
@@ -112,7 +112,7 @@ exports.AddBlackList = async (req, res) => {
         });
 
         if (user.type !== 1) {
-            return res.send({
+            return res.status(400).send({
                 status: false,
                 message: "Bạn không có quyền thực hiện tác vụ này",
             });
@@ -121,9 +121,8 @@ exports.AddBlackList = async (req, res) => {
         const result = AddBlackListSchema.validate(req.body);
         if (result.error) {
             console.log(result.error.message);
-            return res.json({
+            return res.status(400).json({
                 status: false,
-                status: 400,
                 message: result.error.message,
             });
         }
@@ -134,7 +133,7 @@ exports.AddBlackList = async (req, res) => {
         });
 
         if (blList) {
-            return res.json({
+            return res.status(400).json({
                 status: false,
                 message: "Url đã có trong hệ thống!",
             });
@@ -167,7 +166,7 @@ exports.EditBlackList = async (req, res) => {
         });
 
         if (user.type !== 1) {
-            return res.send({
+            return res.status(400).send({
                 status: false,
                 message: "Bạn không có quyền thực hiện tác vụ này",
             });
@@ -176,9 +175,8 @@ exports.EditBlackList = async (req, res) => {
         const result = EditBlackListSchema.validate(req.body);
         if (result.error) {
             console.log(result.error.message);
-            return res.json({
+            return res.status(400).json({
                 status: false,
-                status: 400,
                 message: result.error.message,
             });
         }
@@ -189,7 +187,7 @@ exports.EditBlackList = async (req, res) => {
         });
 
         if (!blacklistItem) {
-            return res.json({
+            return res.status(400).json({
                 status: false,
                 message: "blacklistId không tồn tại!",
             });
@@ -199,7 +197,7 @@ exports.EditBlackList = async (req, res) => {
             new: true
         }); // return data updated
 
-        return res.send({ status: true, data: blUpdate });
+        return res.status(200).send({ status: true, data: blUpdate });
     } catch (error) {
         console.error("add-error", error);
         return res.status(200).json({
@@ -217,7 +215,7 @@ exports.DeleteBlackList = async (req, res) => {
         });
 
         if (user.type !== 1) {
-            return res.send({
+            return res.status(400).send({
                 status: false,
                 message: "Bạn không có quyền thực hiện tác vụ này",
             });
@@ -230,14 +228,14 @@ exports.DeleteBlackList = async (req, res) => {
         });
 
         if (!blacklistItem) {
-            return res.json({
+            return res.status(400).json({
                 status: false,
                 message: "blacklistId không tồn tại!",
             });
         }
 
         await BlackList.deleteOne({ blacklistId: blacklistId }); // return data updated
-        return res.send({ status: true, data: null });
+        return res.status(200).send({ status: true, data: null });
     } catch (error) {
         console.error("delete-error", error);
         return res.status(200).json({

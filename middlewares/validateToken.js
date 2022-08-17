@@ -17,8 +17,9 @@ async function validateToken(req, res, next) {
     expiresIn: process.env.EXPIRE_TOKEN || "1m",
   };
   try {
+    result = jwt.verify(token, process.env.JWT_SECRET, options);
     let user = await User.findOne({
-      accessToken: token,
+      userId: result.id,
     });
     if (!user) {
       result = {
@@ -28,9 +29,7 @@ async function validateToken(req, res, next) {
       return res.status(403).json(result);
     }
 
-    result = jwt.verify(token, process.env.JWT_SECRET, options);
-    console.log(result);
-    if (!user.userId === result.id) {
+    if (!user.genToken === result.genToken) {
       result = {
         status: false,
         message: `Invalid token`,

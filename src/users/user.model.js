@@ -5,17 +5,14 @@ const Schema = mongoose.Schema;
 const userSchema = new Schema(
   {
     userId: { type: String, unique: true, required: true },
-    fullname: {type: String, required: true},
-    phoneNumber: {type: String, required: true},
+    fullname: { type: String, required: true },
+    phoneNumber: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     active: { type: Boolean, default: true },
-    username: { type: String, unique: true, required: true},
+    username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    accessToken: { type: String, default: null },
-    refreshToken: { type: String, default: null },
-    resetPasswordToken: { type: String, default: null },
-    resetPasswordExpires: { type: Date, default: null },
-    type: {type: Number, default: 0}
+    genToken: { type: String, required: true },
+    type: { type: Number, default: 0 }
   },
   {
     timestamps: {

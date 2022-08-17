@@ -8,6 +8,7 @@ const authRoutes = require("./routes/users");
 const adminRoutes = require("./routes/admin");
 const logRoutes = require("./routes/log");
 const blacklistRoutes = require("./routes/blacklist");
+const modelRoutes = require("./routes/model");
 
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -30,7 +31,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 (async () => {
   app.get("/ping", (req, res) => {
-    return res.send({
+    return res.status(200).send({
       status: true,
       message: "Server is healthy",
     });
@@ -40,6 +41,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
   app.use("/api/v1/admin", adminRoutes);
   app.use("/api/v1/log", logRoutes);
   app.use("/api/v1/blacklist", blacklistRoutes);
+  app.use("/api/v1/model", modelRoutes);
 
   const PORT = process.env.PORT || 8686;
   app.listen(PORT, () => {

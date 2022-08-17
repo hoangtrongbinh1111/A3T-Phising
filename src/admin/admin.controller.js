@@ -9,7 +9,7 @@ exports.ListUsers = async (req, res) => {
     });
    
     if (user.type !== 1) {
-      return res.send({
+      return res.status(400).send({
         status: false,
         message: "Bạn không có quyền thực hiện tác vụ này",
       });
@@ -41,7 +41,7 @@ exports.ListUsers = async (req, res) => {
     
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
-    const data = await Users.find(options).skip((page - 1) * limit).limit(limit).lean().exec();
+    const data = await Users.find(options, {userId: 1, fullname: 1, phoneNumber: 1, email: 1, active: 1, username: 1}).skip((page - 1) * limit).limit(limit).lean().exec();
     const total = await Users.find(options).countDocuments();
     return res.status(200).json({
       status: true,
@@ -67,7 +67,7 @@ exports.BlockUser = async (req, res) => {
     });
    
     if (userCheck.type !== 1) {
-      return res.send({
+      return res.status(400).send({
         status: false,
         message: "Bạn không có quyền thực hiện tác vụ này",
       });
@@ -94,7 +94,7 @@ exports.BlockUser = async (req, res) => {
     user.active = isActive === 1;
     await user.save();
     //Success
-    return res.send({
+    return res.status(200).send({
       status: true,
       message: `${isActive === 1 ? "Mở khóa" : "Khóa"} người dùng thành công`,
     });
