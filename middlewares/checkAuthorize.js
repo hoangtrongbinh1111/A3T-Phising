@@ -1,5 +1,5 @@
 require("dotenv").config();
-
+const { responseServerError, responseInValid, responseSuccessWithData } = require("../helpers/ResponseRequest");
 const Users = require("../src/users/user.model");
 
 async function checkAuthorize(id, res) {
@@ -8,10 +8,7 @@ async function checkAuthorize(id, res) {
   });
 
   if (user.type !== 1) {
-    return res.status(400).send({
-      status: false,
-      message: "Bạn không có quyền thực hiện tác vụ này",
-    });
+    return responseServerError({ res, err: "Bạn không có quyền thực hiện tác vụ này" })
   }
 }
 

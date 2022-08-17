@@ -7,7 +7,7 @@ const logSchema = new Schema(
     logId: { type: String, unique: true, required: true },
     url: {type: String, required: true},
     timeExecute: {type: Date, required: true},
-    result: { type: String, required: true },
+    result: { type: Number, required: true },
     userId: { type: String, required: true }
   },
   {

@@ -2,6 +2,7 @@ const Joi = require("joi");
 require("dotenv").config();
 const { v4: uuid } = require("uuid");
 const { customAlphabet: generate } = require("nanoid");
+const { responseServerError, responseInValid, responseSuccessWithData, responseSuccess } = require("../../helpers/ResponseRequest");
 
 const { generateJwt, generateOnlyJwt } = require("./helpers/generateJwt");
 const { verifyRefreshToken } = require("./helpers/verifyRefreshToken");
@@ -36,11 +37,7 @@ exports.Signup = async (req, res) => {
   try {
     const result = userSchema.validate(req.body);
     if (result.error) {
-      console.log(result.error.message);
-      return res.status(400).json({
-        status: false,
-        message: result.error.message,
-      });
+      return responseServerError({ res, err: result.error.message })
     }
 
     //Check if the username has been already registered.
@@ -49,10 +46,7 @@ exports.Signup = async (req, res) => {
     });
 
     if (user) {
-      return res.status(400).json({
-        status: false,
-        message: "Username đã được sử dụng",
-      });
+      return responseInValid({ res, message: "Username đã được sử dụng!" });
     }
 
     const hash = await User.hashPassword(result.value.password);
@@ -67,16 +61,9 @@ exports.Signup = async (req, res) => {
     const newUser = new User(result.value);
     await newUser.save();
 
-    return res.status(200).json({
-      status: true,
-      message: "Đăng kí thành công"
-    });
+    return responseSuccessWithData({ res, data: "Đăng ký thành công!" });
   } catch (error) {
-    console.error("signup-error", error);
-    return res.status(200).json({
-      status: false,
-      message: "Đăng kí thất bại",
-    });
+    return responseServerError({ res, err: "Đăng ký thất bại!" })
   }
 };
 
@@ -84,40 +71,24 @@ exports.Activate = async (req, res) => {
   try {
     const { username } = req.body;
     if (!username) {
-      return res.status(400).json({
-        status: false,
-        message: "Tài khoản chưa được kích hoạt!",
-      });
+      return responseServerError({ res, err: "Tài khoản chưa được kích hoạt!" });
     }
     const user = await User.findOne({
-      username: username,
+      username: username
     });
 
     if (!user) {
-      return res.status(200).json({
-        status: false,
-        message: "Thông tin người dùng không hợp lệ",
-      });
+      return responseInValid({ res, message: "Thông tin người dùng không hợp lệ" });
     } else {
-      if (user.active)
-        return res.status(200).send({
-          status: false,
-          message: "Tài khoản đã được kích hoạt",
-        });
-
+      if (user.active) {
+        return responseSuccessWithData({ res, data: "Tài khoản đã được kích hoạt" });
+      }
       user.active = true;
       await user.save();
-      return res.status(200).json({
-        status: true,
-        message: "Kích hoạt tài khoản thành công.",
-      });
+      return responseSuccess({ res });
     }
   } catch (error) {
-    console.error("activation-error", error);
-    return res.status(200).json({
-      status: false,
-      message: error.message,
-    });
+    return responseServerError({ res, err: error.message });
   }
 };
 
@@ -126,10 +97,7 @@ exports.Login = async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({
-        status: false,
-        message: "Không thể xác thực người dùng.",
-      });
+      return responseServerError({ res, err: "Không thể xác thực người dùng." });
     }
 
     //1. Find if any account with that username exists in DB
@@ -137,54 +105,39 @@ exports.Login = async (req, res) => {
 
     // NOT FOUND - Throw error
     if (!user) {
-      return res.status(400).json({
-        status: false,
-        message: "Tài khoản không tồn tại",
-      });
+      return responseInValid({ res, message: "Tài khoản không tồn tại" });
     }
 
     //2. Throw error if account is not activated
     if (!user.active) {
-      return res.status(400).json({
-        status: false,
-        message: "Bạn cần kích hoạt tài khoản",
-      });
+      return responseInValid({ res, message: "Bạn cần kích hoạt tài khoản" });
     }
 
     //3. Verify the password is valid
     const isValid = await User.comparePasswords(password, user.password);
 
     if (!isValid) {
-      return res.status(200).json({
-        status: false,
-        message: "Sai mật khẩu",
-      });
+      return responseInValid({ res, message: "Sai mật khẩu" });
     }
 
     //Generate Access token
 
     const { error, token, refreshToken } = await generateJwt({ username: user.username, id: user.userId, genToken: user.genToken });
     if (error) {
-      return res.status(200).json({
-        status: false,
-        message: "Không thể tạo token vui lòng thử lại sau",
-      });
+      return responseServerError({ res, err: error.message });
     };
     await user.save();
 
     //Success
-    return res.status(200).send({
-      status: true,
-      message: "Đăng nhập thành công",
-      accessToken: token,
-      refreshToken: refreshToken
+    return responseSuccessWithData({
+      res, data: {
+        accessToken: token,
+        refreshToken: refreshToken,
+        user: user
+      }
     });
   } catch (err) {
-    console.error("Login error", err);
-    return res.status(200).json({
-      status: false,
-      message: "Đăng nhập thất bại. Vui lòng thử lại sau.",
-    });
+    return responseServerError({ res, err: err.message });
   }
 };
 
@@ -192,46 +145,33 @@ exports.RefreshToken = async (req, res) => {
   try {
     const result = refreshTokenBodyValidation.validate(req.body);
     if (result.error) {
-      console.log(result.error.message);
-      return res.status(400).json({
-        status: false,
-        message: result.error.message,
-      });
+      return responseServerError({ res, err: result.error.message })
     }
     const { id } = req.decoded;
     const user = await User.findOne({ userId: id });
     if (!user) {
-      return res.status(404).json({
-        status: false,
-        message: "Tài khoản không tồn tại",
-      });
+      return responseServerError({ res, err: "Tài khoản không tồn tại" });
     }
     const { refreshToken } = req.body;
-    console.log(refreshToken);
     verifyRefreshToken(refreshToken).then(async ({ tokenDetails }) => {
       const payload = { username: tokenDetails.username, id: tokenDetails.id, genToken: tokenDetails.genToken }
       const response = await generateOnlyJwt(payload);
       if (response.status) {
-        return res.status(200).json({
-          status: true,
-          accessToken: response.token,
-          refreshToken: refreshToken,
-          message: "Tạo token thành công!",
+        return responseSuccessWithData({
+          res, data: {
+            accessToken: response.token,
+            refreshToken: refreshToken
+          }
         });
       }
       else {
-        return res.status(401).json({
-          status: false,
-          message: response.message,
-        });
+        return responseServerError({ res, err: response.message });
       }
-    }).catch((err) => res.status(400).json(err));
-  } catch (err) {
-    console.error("Create error", err);
-    return res.status(200).json({
-      status: false,
-      message: "Không thể tạo mới token! Vui lòng đăng nhập lại!",
+    }).catch((err) => {
+      return responseServerError({ res, err: err.message })
     });
+  } catch (err) {
+    return responseServerError({ res, err: err.message });
   }
 };
 
@@ -239,27 +179,17 @@ exports.ResetPassword = async (req, res) => {
   try {
     const { token, newPassword, confirmPassword } = req.body;
     if (!token || !newPassword || !confirmPassword) {
-      return res.status(403).json({
-        status: false,
-        message:
-          "Không thể thực hiện yêu cầu. Vui lòng điền hết các thông tin",
-      });
+      return responseInValid({ res, message: "Không thể thực hiện yêu cầu. Vui lòng điền hết các thông tin" });
     }
     const user = await User.findOne({
       resetPasswordToken: req.body.token,
       resetPasswordExpires: { $gt: Date.now() },
     });
     if (!user) {
-      return res.status(400).send({
-        status: false,
-        message: "Password reset token is invalid or has expired.",
-      });
+      return responseInValid({ res, message: "Password reset token is invalid or has expired." });
     }
     if (newPassword !== confirmPassword) {
-      return res.status(400).json({
-        status: false,
-        message: "Mật khẩu mới không khớp",
-      });
+      return responseInValid({ res, message: "Mật khẩu mới không khớp" });
     }
     const hash = await User.hashPassword(req.body.newPassword);
     user.password = hash;
@@ -267,17 +197,9 @@ exports.ResetPassword = async (req, res) => {
     user.resetPasswordExpires = "";
 
     await user.save();
-
-    return res.status(200).send({
-      status: true,
-      message: "Mật khẩu đã được thay đổi",
-    });
+    return responseSuccess({ res });
   } catch (error) {
-    console.error("reset-password-error", error);
-    return res.status(200).json({
-      status: false,
-      message: error.message,
-    });
+    return responseServerError({ res, err: error.message });
   }
 };
 
@@ -286,59 +208,36 @@ exports.ChangePassword = async (req, res) => {
     const { id } = req.decoded;
     const { oldPassword, newPassword, confirmPassword } = req.body;
     if (!oldPassword || !newPassword || !confirmPassword) {
-      return res.status(403).json({
-        status: false,
-        message:
-          "Không thể thực hiện yêu cầu. Vui lòng điền hết các thông tin",
-      });
+      return responseInValid({ res, message: "Không thể thực hiện yêu cầu. Vui lòng điền hết các thông tin" });
     }
     const user = await User.findOne({
       userId: id
     });
     if (!user) {
-      return res.status(400).send({
-        status: false,
-        message: "Người dùng không tồn tại.",
-      });
+      return responseInValid({ res, message: "Người dùng không tồn tại." });
     }
 
     const isValid = await User.comparePasswords(oldPassword, user.password);
 
     if (!isValid) {
-      return res.status(400).json({
-        status: false,
-        message: "Mật khẩu không chính xác",
-      });
+      return responseInValid({ res, message: "Mật khẩu không chính xác" });
     }
 
     if (oldPassword === newPassword) {
-      return res.status(400).json({
-        status: false,
-        message: "Mật khẩu mới cần khác mật khẩu cũ",
-      });
+      return responseInValid({ res, message: "Mật khẩu mới cần khác mật khẩu cũ" });
     }
 
     if (newPassword !== confirmPassword) {
-      return res.status(400).json({
-        status: false,
-        message: "Mật khẩu mới không khớp",
-      });
+      return responseInValid({ res, message: "Mật khẩu mới không khớp" });
     }
     const hash = await User.hashPassword(newPassword);
     user.password = hash;
 
     await user.save();
 
-    return res.status(200).send({
-      status: true,
-      message: "Mật khẩu đã được thay đổi",
-    });
+    return responseSuccess({ res });
   } catch (error) {
-    console.error("reset-password-error", error);
-    return res.status(200).json({
-      status: false,
-      message: error.message,
-    });
+    return responseServerError({ res, err: error.message });
   }
 };
 
@@ -346,16 +245,12 @@ exports.Logout = async (req, res) => {
   try {
     const { id } = req.decoded;
 
-    let user = await User.findOne({ userId: id });
-    await user.save();
+    // let user = await User.findOne({ userId: id });
+    // await user.save();
 
-    return res.status(200).send({ status: true, message: "Đăng xuất thành công" });
+    return responseSuccess({ res });
   } catch (error) {
-    console.error("user-logout-error", error);
-    return res.stat(200).json({
-      status: false,
-      message: error.message,
-    });
+    return responseServerError({ res, err: error.message });
   }
 };
 
@@ -364,8 +259,8 @@ exports.GetUserDetail = async (req, res) => {
     const { id } = req.decoded;
 
     let user = await User.findOne({ userId: id });
-    return res.status(200).send({
-      status: true, data: {
+    return responseSuccessWithData({
+      res, data: {
         username: user.username,
         email: user.email,
         fullname: user.fullname,
@@ -373,11 +268,7 @@ exports.GetUserDetail = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("user-logout-error", error);
-    return res.status(400).json({
-      status: false,
-      message: error.message,
-    });
+    return responseServerError({ res, err: error.message });
   }
 };
 
@@ -387,19 +278,14 @@ exports.EditUser = async (req, res) => {
 
     const result = EditUserSchema.validate(req.body);
     if (result.error) {
-      console.log(result.error.message);
-      return res.status(400).json({
-        status: false,
-        message: result.error.message,
-      });
+      return responseServerError({ res, err: result.error.message })
     }
 
     let user = await User.findOneAndUpdate({ userId: id }, req.body, {
       new: true
     }); // return data updated
-
-    return res.status(200).send({
-      status: true, data: {
+    return responseSuccessWithData({
+      res, data: {
         fullname: user.fullname,
         phoneNumber: user.phoneNumber,
         email: user.email,
@@ -407,10 +293,6 @@ exports.EditUser = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("user-logout-error", error);
-    return res.stat(200).json({
-      status: false,
-      message: error.message,
-    });
+    return responseServerError({ res, err: error.message });
   }
 };

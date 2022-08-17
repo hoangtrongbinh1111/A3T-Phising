@@ -1,22 +1,21 @@
 const Joi = require("joi");
 require("dotenv").config();
 const { v4: uuid } = require("uuid");
-
+const { responseServerError, responseInValid, responseSuccessWithData } = require("../../helpers/ResponseRequest");
+const { MALICIOUS, UNMALICIOUS } = require("../../helpers/constant");
+const { checkAuthorize } = require("../../middlewares/checkAuthorize");
 const Users = require("../users/user.model");
+const BlackList = require("../blacklist/blacklist.model");
 const Log = require("./log.model");
+
+const logDetectSchema = Joi.object().keys({
+    url: Joi.string().required()
+});
+
 exports.ListLogs = async (req, res) => {
     try {
         const { id } = req.decoded;
-        const user = await Users.findOne({
-            userId: id
-        });
-
-        if (user.type !== 1) {
-            return res.status(400).send({
-                status: false,
-                message: "Bạn không có quyền thực hiện tác vụ này",
-            });
-        }
+        checkAuthorize(id, res);
         let { search, page, limit, from_time, to_time, userId } = req.query;
         let options = {};
         if (userId && search !== "") {
@@ -49,18 +48,55 @@ exports.ListLogs = async (req, res) => {
         limit = parseInt(limit) || 10;
         const data = await Log.find(options).skip((page - 1) * limit).limit(limit).lean().exec();
         const total = await Log.find(options).countDocuments();
-        return res.status(200).json({
-            status: true,
-            data,
-            total,
-            page,
-            last_page: Math.ceil(total / limit)
+        return responseSuccessWithData({
+            res, data: {
+                data,
+                total,
+                page,
+                last_page: Math.ceil(total / limit)
+            }
         });
     } catch (error) {
-        console.error("Không thể lấy danh sách log", error);
-        return res.status(200).json({
-            status: false,
-            message: error.message,
+        return responseServerError({ res, err: error.message });
+    }
+};
+
+exports.DetectMaliciousWebsite = async (req, res) => {
+    try {
+        const { id } = req.decoded;
+        checkAuthorize(id, res);
+
+        const result = logDetectSchema.validate(req.body);
+        if (result.error) {
+            return responseServerError({ res, err: result.error.message })
+        }
+
+        const { url } = req.body;
+        const blList = await BlackList.findOne({
+            url: url,
         });
+
+        if (blList) {
+            return responseSuccessWithData({ res, data: MALICIOUS }); // đường dẫn độc hại
+        }
+
+        // ** HANDLE DETECT URL MALICIOUS */
+        const resultDetect = MALICIOUS;
+        // ** END HANDLE DETECT */
+
+        // Thêm vào logs
+        const logsData = {
+            logId: uuid(),
+            url: url,
+            timeExecute: "10",
+            result: resultDetect,
+            userId: id
+        }
+        const newLog = new Log(logsData);
+        await newLog.save();
+
+        return responseSuccessWithData({ res, data: resultDetect });
+    } catch (error) {
+        return responseServerError({ res, err: error.message });
     }
 };

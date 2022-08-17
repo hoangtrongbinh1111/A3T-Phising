@@ -1,19 +1,12 @@
 const Joi = require("joi");
 const Users = require("../users/user.model");
+const { responseServerError, responseInValid, responseSuccessWithData } = require("../../helpers/ResponseRequest");
+const { checkAuthorize } = require("../../middlewares/checkAuthorize");
 
 exports.ListUsers = async (req, res) => {
   try {
     const { id } = req.decoded;
-    const user = await Users.findOne({
-      userId: id
-    });
-   
-    if (user.type !== 1) {
-      return res.status(400).send({
-        status: false,
-        message: "Bạn không có quyền thực hiện tác vụ này",
-      });
-    }
+    checkAuthorize(id, res);
     let { search, page, limit, from_time, to_time } = req.query;
     let options = {
       type: 0
@@ -38,47 +31,32 @@ exports.ListUsers = async (req, res) => {
         }
       }
     }
-    
+
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
-    const data = await Users.find(options, {userId: 1, fullname: 1, phoneNumber: 1, email: 1, active: 1, username: 1}).skip((page - 1) * limit).limit(limit).lean().exec();
+    const data = await Users.find(options, { userId: 1, fullname: 1, phoneNumber: 1, email: 1, active: 1, username: 1 }).skip((page - 1) * limit).limit(limit).lean().exec();
     const total = await Users.find(options).countDocuments();
-    return res.status(200).json({
-      status: true,
-      data,
-      total,
-      page,
-      last_page: Math.ceil(total / limit)
+    return responseSuccessWithData({
+      res, data: {
+        data,
+        total,
+        page,
+        last_page: Math.ceil(total / limit)
+      }
     });
   } catch (error) {
-    console.error("Không thể lấy danh sách người dùng", error);
-    return res.status(200).json({
-      status: false,
-      message: error.message,
-    });
+    return responseServerError({ res, err: error.message });
   }
 };
 
 exports.BlockUser = async (req, res) => {
   try {
     const { id } = req.decoded;
-    const userCheck = await Users.findOne({
-      userId: id
-    });
-   
-    if (userCheck.type !== 1) {
-      return res.status(400).send({
-        status: false,
-        message: "Bạn không có quyền thực hiện tác vụ này",
-      });
-    }
+    checkAuthorize(id, res);
 
     const { username, isActive } = req.body;
     if (!username) {
-      return res.status(400).json({
-        status: false,
-        message: "Không thể xác thực người dùng.",
-      });
+      return responseServerError({ res, err: "Không thể xác thực người dùng!" });
     }
 
     //1. Find if any account with that username exists in DB
@@ -86,23 +64,13 @@ exports.BlockUser = async (req, res) => {
 
     // NOT FOUND - Throw error
     if (!user) {
-      return res.status(404).json({
-        status: false,
-        message: "Tài khoản không tồn tại",
-      });
+      return responseServerError({ res, err: "Tài khoản không tồn tại" });
     }
     user.active = isActive === 1;
     await user.save();
     //Success
-    return res.status(200).send({
-      status: true,
-      message: `${isActive === 1 ? "Mở khóa" : "Khóa"} người dùng thành công`,
-    });
+    return responseSuccessWithData({ res, data: `${isActive === 1 ? "Mở khóa" : "Khóa"} người dùng thành công` });
   } catch (err) {
-    console.error("Block error", err);
-    return res.status(200).json({
-      status: false,
-      message: "Xóa người dùng thất bại, vui lòng thử lại.",
-    });
+    return responseServerError({ res, err: err.message });
   }
 };
