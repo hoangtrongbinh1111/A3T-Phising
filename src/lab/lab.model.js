@@ -6,11 +6,11 @@ const labSchema = new Schema(
     {
         labId: { type: String, unique: true, required: true },
         labName: { type: String, required: true},
-        userCreated: { type: String, required: true},
-        trainLogPath: { type: String},
-        testLogPath: { type: String },
-        trainedModelPath: { type: String },
-        configPath: { type: String},
+        userCreated: { type: String, default: null},
+        trainLogPath: { type: String, default: null },
+        testLogPath: { type: String, default: null },
+        trainedModelPath: { type: String, default: null },
+        configPath: { type: String, default: null},
     },
     {
         timestamps: {
