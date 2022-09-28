@@ -4,9 +4,9 @@ const Schema = mongoose.Schema;
 const modelSchema = new Schema(
     {
         modelId: { type: String, unique: true, required: true },
-        urlSaveModel: { type: String, required: true, unique: true },
-        params: { type: Schema.Types.Mixed, required: false },
-        desc: { type: String, required: false }
+        modelName: { type: String, required: true },
+        algorithmName: { type: String, required: true },
+        userCreated: { type: String, required: true},    
     },
     {
         timestamps: {
