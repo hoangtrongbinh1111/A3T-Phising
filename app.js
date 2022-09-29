@@ -5,7 +5,7 @@ const bodyParser = require("body-parser");
 const path = require('path');
 require("dotenv").config();
 
-
+const dataRoutes = require("./routes/dataset");
 const labRoutes = require("./routes/lab");
 const authRoutes = require("./routes/users");
 const adminRoutes = require("./routes/admin");
@@ -44,6 +44,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
       message: "Server is healthy",
     });
   });
+  app.use("/api/v1/data", dataRoutes);
   app.use("/api/v1/lab", labRoutes);
   app.use("/api/v1/users", authRoutes);
   app.use("/api/v1/admin", adminRoutes);

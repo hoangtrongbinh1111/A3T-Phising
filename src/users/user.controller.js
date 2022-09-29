@@ -275,7 +275,6 @@ exports.GetUserDetail = async (req, res) => {
 exports.EditUser = async (req, res) => {
   try {
     const { id } = req.decoded;
-
     const result = EditUserSchema.validate(req.body);
     if (result.error) {
       return responseServerError({ res, err: result.error.message })
