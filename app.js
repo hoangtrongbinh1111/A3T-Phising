@@ -2,8 +2,11 @@ const express = require("express");
 const cors = require('cors');
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
+const path = require('path');
 require("dotenv").config();
 
+
+const labRoutes = require("./routes/lab");
 const authRoutes = require("./routes/users");
 const adminRoutes = require("./routes/admin");
 const logRoutes = require("./routes/log");
@@ -25,6 +28,11 @@ mongoose
 
 const app = express();
 
+
+app.use(express.json()) // for parsing application/json
+app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
+
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -36,7 +44,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
       message: "Server is healthy",
     });
   });
-  
+  app.use("/api/v1/lab", labRoutes);
   app.use("/api/v1/users", authRoutes);
   app.use("/api/v1/admin", adminRoutes);
   app.use("/api/v1/log", logRoutes);
