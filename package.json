@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "nodemon --inspect app.js"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +20,8 @@
     "mongo-sanitize": "^1.1.0",
     "mongoose": "^5.11.10",
     "nanoid": "^3.1.20",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "uuidv4": "^6.2.13"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"

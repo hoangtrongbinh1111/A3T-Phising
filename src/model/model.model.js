@@ -5,8 +5,8 @@ const modelSchema = new Schema(
     {
         modelId: { type: String, unique: true, required: true },
         modelName: { type: String, required: true },
-        algorithmName: { type: String, required: true },
-        userCreated: { type: String, required: true},    
+        algorithmName: { type: String, default: null },
+        userCreated: { type: String, default: null },
     },
     {
         timestamps: {
