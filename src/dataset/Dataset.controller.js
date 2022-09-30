@@ -11,7 +11,6 @@ const { VirtualType } = require("mongoose");
 
 const updateDatasetSchema = Joi.object().keys({
     datasetId: Joi.string().required(),
-    savePath: Joi.string(),
     numTrain: Joi.number().optional(),
     numVal: Joi.number().optional(),
     numTest: Joi.number().optional(),
@@ -21,30 +20,22 @@ const updateDatasetSchema = Joi.object().keys({
 const datasetCreateSchema = Joi.object().keys({
     userUpload: Joi.string().required(),
     dataName: Joi.string().required(),
+    savePath: Joi.string(),
 })
 exports.updateDataset = async (req, res) => {
     try {
-        await dataset.findOne({ datasetId: req.body.datasetId })
-            .then((data) => {
-                return `/${DATA_FOLDER}/${data.dataName}`
-            })
-            .then((path) => {
-                update(path)
-            })
-        async function update(path) {
-            req.body.savePath = path
+       
             const result = updateDatasetSchema.validate(req.body)
             if (result.error) {
                 return responseServerError({ res, err: result.error.message })
             }
-
             let data = await dataset.findOneAndUpdate(req.body.datasetId, req.body, {
                 new: true
             })
             return responseSuccessWithData({
                 res, data: data
             })
-        }
+
     } catch (err) {
 
         return responseServerError({ res, err: err.message })
@@ -56,9 +47,9 @@ exports.createDataset = async (req, res) => {
         if (result.error) {
             return responseServerError({ res, err: result.error.message });
         }
-        const { dataName, userUpload } = req.body;
+        const { dataName, userUpload} = req.body;
         const datasetId = uuid();
-
+        const savePath = `/${DATA_FOLDER}/${datasetId}`
         //create folder 
         const root = path.resolve('./');
         const dir = getDir({ dir: root + `/${DATA_FOLDER}` });
@@ -70,6 +61,7 @@ exports.createDataset = async (req, res) => {
             datasetId,
             dataName,
             userUpload,
+            savePath,
         }
         const newData = new dataset(data);
         await newData.save();
