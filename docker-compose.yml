@@ -1,0 +1,23 @@
+
+version: '3.1'
+
+services:
+
+  api-service:
+    build: .
+    depends_on:
+      - mongo
+    volumes:
+      - .:/home/node/app
+      - /home/node/app/node_modules
+    ports:
+      - 6789:6789
+
+  mongo:
+    image: mongo
+    ports:
+      - 27017:27017
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: admin
