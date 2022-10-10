@@ -53,7 +53,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
     app.use("/api/v1/model", modelRoutes);
 
     const PORT = process.env.PORT || 8686;
-    app.listen(PORT, '0.0.0.0', () => {
+    app.listen(PORT, () => {
         console.log("Server started listening on PORT : " + PORT);
     });
 })();
