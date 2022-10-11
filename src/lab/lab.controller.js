@@ -69,6 +69,7 @@ exports.listLab = async(req, res) => {
 
 exports.createLab = async(req, res) => {
     try {
+        console.log(req.body)
         const result = labCreateSchema.validate(req.body);
         if (result.error) {
             return responseServerError({ res, err: result.error.message });
