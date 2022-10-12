@@ -1,0 +1,12 @@
+authtoken: 23ch0ruASY7eAbenQVsOG7a4I0Q_6EmdD9XtThqPTFh38LkzY
+web_addr: 0.0.0.0:8081
+update: false
+log: stdout
+
+tunnels:
+  ssh-access:
+    addr: ssh-server:22
+    proto: tcp
+  app-foo:
+    addr: nginx:8080
+    proto: http
