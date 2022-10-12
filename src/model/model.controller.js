@@ -21,7 +21,7 @@ const updateModelSchema = Joi.object().keys({
     algorithmName: Joi.string(),
     userCreated: Joi.string(),
 });
-exports.listModel = async(req, res) => {
+exports.listModel = async (req, res) => {
     try {
         let { search, page, limit, from_time, to_time } = req.query;
         let options = {};
@@ -65,7 +65,7 @@ exports.listModel = async(req, res) => {
         return responseServerError({ res, err: error.message });
     }
 };
-exports.createModel = async(req, res) => {
+exports.createModel = async (req, res) => {
     try {
         const result = createModelSchema.validate(req.body);
         if (result.error) {
@@ -87,22 +87,22 @@ exports.createModel = async(req, res) => {
         return responseServerError({ res, err: err.message });
     }
 };
-exports.updateModel = async(req, res) => {
+exports.updateModel = async (req, res) => {
     try {
         const result = updateModelSchema.validate(req.body);
         if (result.error) {
             return responseServerError({ res, err: result.error.message });
         }
         const { modelId, modelName, algorithmName, userCreated } = req.body;
-        var modelItem = Model.findOne({ modelId: modelId });
+        var modelItem = await Model.findOne({ modelId: modelId });
         if (!modelItem) {
             return responseServerError({ res, err: "Model not found" });
         }
         delete result.value.modelId;
         let modelUpdate = await Model.findOneAndUpdate({ modelId: modelId },
             result.value, {
-                new: true,
-            }
+            new: true,
+        }
         );
         return responseSuccessWithData({
             res,
@@ -112,7 +112,7 @@ exports.updateModel = async(req, res) => {
         return responseServerError({ res, err: err.message });
     }
 };
-exports.readModel = async(req, res) => {
+exports.readModel = async (req, res) => {
     try {
         const { modelId } = req.query;
         let modelItem = await Model.findOne({ modelId: modelId });
@@ -126,7 +126,7 @@ exports.readModel = async(req, res) => {
     }
 };
 
-exports.deleteModel = async(req, res) => {
+exports.deleteModel = async (req, res) => {
     try {
         const { modelId } = req.query;
         //Check if the username has been already registered.
