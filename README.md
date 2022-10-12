@@ -28,7 +28,7 @@ To run this project, you'll need to have the following installed:
   ```sh
   npm install npm@latest -g
   ```
-- Docker Compose: [https://huongdan.azdigi.com/cai-dat-va-su-dung-docker-compose-ubuntu-22-04/](Install docker-compose)
+- Docker Compose: [https://huongdan.azdigi.com/cai-dat-va-su-dung-docker-compose-ubuntu-22-04/]
 - MongoDB : [https://mongodb.com](https://mongodb.com) <br>
 
 > You can also use MongoDB Atlas if you prefer.
