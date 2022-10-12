@@ -22,7 +22,7 @@ const labUpdateSchema = Joi.object().keys({
     labName: Joi.string().optional(),
     configPath: Joi.string().optional(),
 });
-exports.listLab = async(req, res) => {
+exports.listLab = async (req, res) => {
     try {
         let { search, page, limit, from_time, to_time } = req.query;
         let options = {};
@@ -67,9 +67,8 @@ exports.listLab = async(req, res) => {
     }
 };
 
-exports.createLab = async(req, res) => {
+exports.createLab = async (req, res) => {
     try {
-        console.log(req.body)
         const result = labCreateSchema.validate(req.body);
         if (result.error) {
             return responseServerError({ res, err: result.error.message });
@@ -106,14 +105,14 @@ exports.createLab = async(req, res) => {
     }
 };
 
-exports.updateLab = async(req, res) => {
+exports.updateLab = async (req, res) => {
     try {
         const result = labUpdateSchema.validate(req.body);
         if (result.error) {
             return responseServerError({ res, err: result.error.message });
         }
         const { labId, labName, configPath } = req.body;
-        var labItem = Lab.findOne({ labId: labId });
+        var labItem = await Lab.findOne({ labId: labId });
         if (!labItem) {
             return responseServerError({ res, err: "Lab not found" });
         }
@@ -130,7 +129,7 @@ exports.updateLab = async(req, res) => {
     }
 };
 
-exports.readLab = async(req, res) => {
+exports.readLab = async (req, res) => {
     try {
         const { labId } = req.query;
         let labItem = await Lab.findOne({ labId: labId });
@@ -144,7 +143,7 @@ exports.readLab = async(req, res) => {
     }
 };
 
-exports.deleteLab = async(req, res) => {
+exports.deleteLab = async (req, res) => {
     try {
         const { labId } = req.query;
 

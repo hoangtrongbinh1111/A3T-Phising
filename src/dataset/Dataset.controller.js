@@ -26,7 +26,7 @@ const datasetCreateSchema = Joi.object().keys({
     userUpload: Joi.string().required(),
     dataName: Joi.string().required(),
 });
-exports.listDataset = async(req, res) => {
+exports.listDataset = async (req, res) => {
     try {
         let { search, page, limit, from_time, to_time } = req.query;
         let options = {};
@@ -72,7 +72,7 @@ exports.listDataset = async(req, res) => {
     }
 };
 
-exports.createDataset = async(req, res) => {
+exports.createDataset = async (req, res) => {
     try {
         const result = datasetCreateSchema.validate(req.body);
         if (result.error) {
@@ -106,7 +106,7 @@ exports.createDataset = async(req, res) => {
         return responseServerError({ res, err: error.message });
     }
 };
-exports.updateDataset = async(req, res) => {
+exports.updateDataset = async (req, res) => {
     try {
         const result = updateDatasetSchema.validate(req.body);
         if (result.error) {
@@ -114,15 +114,15 @@ exports.updateDataset = async(req, res) => {
         }
         const { datasetId, numTrain, numVal, numTest, dataType, desc } = req.body;
 
-        var datasetItem = dataset.findOne({ datasetId: datasetId });
+        var datasetItem = await dataset.findOne({ datasetId: datasetId });
         if (!datasetItem) {
             return responseServerError({ res, err: "Dataset not found" });
         }
         delete result.value.datasetId;
         let datasetlUpdate = await dataset.findOneAndUpdate({ datasetId: datasetId },
             result.value, {
-                new: true,
-            }
+            new: true,
+        }
         );
         return responseSuccessWithData({
             res,
@@ -133,7 +133,7 @@ exports.updateDataset = async(req, res) => {
     }
 };
 
-exports.readDataset = async(req, res) => {
+exports.readDataset = async (req, res) => {
     try {
         const { datasetId } = req.query;
         let datasetItem = await dataset.findOne({ datasetId: datasetId });
@@ -147,7 +147,7 @@ exports.readDataset = async(req, res) => {
     }
 };
 
-exports.deleteDataset = async(req, res) => {
+exports.deleteDataset = async (req, res) => {
     try {
         const { datasetId } = req.query;
 
