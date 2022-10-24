@@ -9,18 +9,33 @@ const {
   responseSuccessWithData,
 } = require("../../helpers/ResponseRequest");
 const path = require("path");
-const { LAB_FOLDER, LAB_SUBFOLDER } = require("../../helpers/constant");
-const { getDir, removeDir } = require("../../helpers/file");
+const {
+  LAB_FOLDER,
+  LAB_SUBFOLDER,
+  CONFIG_FOLDER,
+  FILE_CFG,
+} = require("../../helpers/constant");
+const { getDir, removeDir, createFile } = require("../../helpers/file");
 
 const labCreateSchema = Joi.object().keys({
   labName: Joi.string().required(),
   userCreated: Joi.string().required(),
 });
 
+const labEditModelAndDataset = Joi.object().keys({
+  labId: Joi.string().required(),
+  modelId: Joi.string().required(),
+  datasetId: Joi.string().required(),
+});
+
 const labUpdateSchema = Joi.object().keys({
   labId: Joi.string().required(),
   labName: Joi.string().optional(),
-  configPath: Joi.string().optional(),
+});
+
+const configUpdateSchema = Joi.object().keys({
+  labId: Joi.string().required(),
+  config: Joi.object().required(),
 });
 exports.listLab = async (req, res) => {
   try {
@@ -77,8 +92,9 @@ exports.createLab = async (req, res) => {
     const labId = uuid();
     // create folder
     const root = path.resolve("./");
-    // const dir = getDir({ dir: root + `/${LAB_FOLDER}` });
     const labDir = getDir({ dir: root + `/${LAB_FOLDER}/${labId}` });
+
+
     const subLabDir = {};
     Object.keys(LAB_SUBFOLDER).map((subfolder) => {
       const dirPath = `/${LAB_FOLDER}/${labId}/${LAB_SUBFOLDER[subfolder]}`;
@@ -95,6 +111,7 @@ exports.createLab = async (req, res) => {
       trainLogPath: subLabDir["trainLogPath"],
       testLogPath: subLabDir["testLogPath"],
       trainedModelPath: subLabDir["trainedModelPath"],
+      // config : ,
     };
     const newLab = new Lab(labData);
     await newLab.save();
@@ -111,8 +128,8 @@ exports.updateLab = async (req, res) => {
     if (result.error) {
       return responseServerError({ res, err: result.error.message });
     }
-    const { labId, labName, configPath } = req.body;
-    var labItem = Lab.findOne({ labId: labId });
+    const { labId, labName } = req.body;
+    var labItem = await Lab.findOne({ labId: labId });
     if (!labItem) {
       return responseServerError({ res, err: "Lab not found" });
     }
@@ -146,7 +163,7 @@ exports.readLab = async (req, res) => {
 exports.deleteLab = async (req, res) => {
   try {
     const { labId } = req.query;
-    
+
     var labItem = await Lab.findOne({
       labId: labId,
     });
@@ -161,6 +178,73 @@ exports.deleteLab = async (req, res) => {
     });
     // done delete
     return responseSuccess({ res });
+  } catch (err) {
+    return responseServerError({ res, err: err.message });
+  }
+};
+
+exports.editModelAndDatasetLab = async (req, res) => {
+  try {
+    const result = labEditModelAndDataset.validate(req.body);
+    if (result.error) {
+      return responseServerError({ res, err: result.error.message });
+    }
+    const { labId, modelId, datasetId } = req.body;
+    var labItem = await Lab.findOne({ labId: labId });
+    if (!labItem) {
+      return responseServerError({ res, err: "Lab not found" });
+    }
+    delete result.value.labId;
+    let labUpdate = await Lab.findOneAndUpdate({ labId: labId }, result.value, {
+      new: true,
+    });
+    return responseSuccessWithData({
+      res,
+      data: labUpdate,
+    });
+  } catch (err) {
+    return responseServerError({ res, err: err.message });
+  }
+};
+
+exports.getConfig = async (req, res) => {
+  try {
+    const { labId } = req.query;
+    var labItem = await Lab.findOne({ labId: labId }, "config");
+    if (labItem) {
+      return responseSuccessWithData({ res, data: labItem });
+    } else {
+      return responseServerError({ res, err: "Lab not found" });
+    }
+  } catch (error) {
+    return responseServerError({ res, err: error.message });
+  }
+};
+
+exports.editConfig = async (req, res) => {
+  try {
+    const result = configUpdateSchema.validate(req.body);
+    if (result.error) {
+      return responseServerError({ res, err: result.error.message });
+    }
+    const { labId, config } = req.body;
+
+    var labItem = await Lab.findOne({ labId: labId });
+    if (!labItem) {
+      return responseServerError({ res, err: "Lab not found" });
+    }
+    delete result.value.labId;
+    let labUpdate = await Lab.findOneAndUpdate(
+      { labId: labId },
+      { $set: { config: config } },
+      {
+        new: true,
+      }
+    );
+    return responseSuccessWithData({
+      res,
+      data: labUpdate,
+    });
   } catch (err) {
     return responseServerError({ res, err: err.message });
   }
