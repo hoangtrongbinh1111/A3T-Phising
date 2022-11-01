@@ -1,4 +1,6 @@
 const Joi = require("joi");
+const { spawn,exec, spawnSync } = require("child_process");
+const { PythonShell } = require("python-shell");
 require("dotenv").config();
 const { v4: uuid } = require("uuid");
 const Lab = require("./lab.model");
@@ -16,6 +18,8 @@ const {
   FILE_CFG,
 } = require("../../helpers/constant");
 const { getDir, removeDir, createFile } = require("../../helpers/file");
+const { type } = require("os");
+const { config } = require("dotenv");
 
 const labCreateSchema = Joi.object().keys({
   labName: Joi.string().required(),
@@ -35,7 +39,33 @@ const labUpdateSchema = Joi.object().keys({
 
 const configUpdateSchema = Joi.object().keys({
   labId: Joi.string().required(),
-  config: Joi.object().required(),
+  config: {
+    pre_train_data_path: Joi.string().required(),
+    pre_train_model_type: Joi.string().required(),
+    pre_train_feature_set: Joi.string().required(),
+    pre_train_test_size: Joi.number().required(),
+    pre_train_random_state: Joi.number().required(),
+    pre_train_number_records: Joi.number().required(),
+
+    pre_inf_data_path: Joi.string().required(),
+    pre_inf_feature_set: Joi.string().required(),
+
+    x_train: Joi.string().required(),
+    y_train: Joi.string().required(),
+    train_num_epoch: Joi.string().required(),
+    train_batch_size: Joi.number().required(),
+    train_model_type: Joi.number().required(),
+    train_model_config: Joi.number().required(),
+
+    x_test: Joi.array().required(),
+    y_test: Joi.array().required(),
+    test_output_folder: Joi.string().required(),
+    test_epoch_num: Joi.string().required(),
+
+    inf_output_foler: Joi.string().required(),
+    inf_data_path: Joi.array().required(),
+    inf_epoch_num: Joi.string().required(),
+  },
 });
 exports.listLab = async (req, res) => {
   try {
@@ -93,7 +123,6 @@ exports.createLab = async (req, res) => {
     // create folder
     const root = path.resolve("./");
     const labDir = getDir({ dir: root + `/${LAB_FOLDER}/${labId}` });
-
 
     const subLabDir = {};
     Object.keys(LAB_SUBFOLDER).map((subfolder) => {
@@ -245,6 +274,44 @@ exports.editConfig = async (req, res) => {
       res,
       data: labUpdate,
     });
+  } catch (err) {
+    return responseServerError({ res, err: err.message });
+  }
+};
+
+exports.trainModule = async (req, res) => {
+  try {
+    var { labId } = req.body;
+    var labConfig = await Lab.findOne({ labId: labId }, "config");
+    if (!labConfig) {
+      return responseServerError({ res, err: "Lab not found" });
+    }
+    //tạo 1 mảng lưu các key value của Train Config
+    var keysTrainConfig = [];
+    //thêm các key value vào mảng
+    Object.entries(labConfig.config).forEach((cf) => {
+      if (cf[0].includes("train") && !cf[0].includes("pre"))
+        keysTrainConfig.push(cf);
+    });
+    var command = "python3 demo.py";
+    //nối các key value vào command
+    var result = keysTrainConfig.reduce((acc, key) => {
+      return acc + ` --${key[0]} ${key[1].toString()}`;
+    }, command);
+    
+    try {
+      
+    
+      exec('activate phising', function (error, stdout, stderr) {  //active anaconda env
+      })
+
+      exec (result,(error,stdout,stderr)=>{
+          console.log(error.toString());
+      })
+      return responseSuccess({ res });
+    } catch (e) {
+      return responseServerError({ res, err: e.message });
+    }
   } catch (err) {
     return responseServerError({ res, err: err.message });
   }
