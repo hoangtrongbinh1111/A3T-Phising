@@ -24,13 +24,11 @@ const {
 // });
 const createModelSchema = Joi.object().keys({
   modelName: Joi.string().required(),
-  algorithmName: Joi.string(),
   userCreated: Joi.string(),
 });
 const updateModelSchema = Joi.object().keys({
   modelId: Joi.string().required(),
   modelName: Joi.string(),
-  algorithmName: Joi.string(),
   userCreated: Joi.string(),
 });
 exports.listModel = async (req, res) => {
@@ -83,14 +81,13 @@ exports.createModel = async (req, res) => {
     if (result.error) {
       return responseServerError({ res, err: result.error.message });
     }
-    const { modelName, algorithmName, userCreated } = req.body;
+    const { modelName, userCreated } = req.body;
     const modelId = uuid();
 
     const modelData = {
       modelId,
       modelName,
       userCreated,
-      algorithmName,
     };
     const newModel = new Model(modelData);
     await newModel.save();
@@ -105,7 +102,7 @@ exports.updateModel = async (req, res) => {
     if (result.error) {
       return responseServerError({ res, err: result.error.message });
     }
-    const { modelId, modelName, algorithmName, userCreated } = req.body;
+    const { modelId, modelName, userCreated } = req.body;
     var modelItem = Model.findOne({ modelId: modelId });
     if (!modelItem) {
       return responseServerError({ res, err: "Model not found" });
