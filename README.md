@@ -1,13 +1,8 @@
 
-<!-- ABOUT THE PROJECT -->
+<!-- ABOUT THE ATTT BACKEND REST API  -->
 
 ### What's inside this repo?
-
-1. User signup/registration with Email verification.
-2. User Login.
-3. Forgot password and reset password.
-4. Session management using JWT (JSON Web Tokens).
-5. Other APIs
+- Rest API
 
 ### Built With
 
@@ -19,7 +14,9 @@
 
 ## Getting Started
 
-To get a local copy up and running follow these simple steps :
+- Download source code or clone the repository
+- Default API port : 6789 set in Dockerfile
+- Default MongoDB port : 27017 set in docker-compose.yml
 
 ### Prerequisites
 
@@ -31,6 +28,7 @@ To run this project, you'll need to have the following installed:
   ```sh
   npm install npm@latest -g
   ```
+- Docker Compose: [https://huongdan.azdigi.com/cai-dat-va-su-dung-docker-compose-ubuntu-22-04/]
 - MongoDB : [https://mongodb.com](https://mongodb.com) <br>
 
 > You can also use MongoDB Atlas if you prefer.
@@ -38,18 +36,21 @@ To run this project, you'll need to have the following installed:
 
 ### Installation
 
-1. Register at [SendGrid](https://sendgrid.com) SendGrid and create an API KEY.
-
-2. Clone the repo :
+1. Start MongoDB container (use `sudo` if required) :
    ```sh
-   git clone https://github.com/PraneshASP/node-authentication-jwt-mongodb.git
+   docker-compose up -d
    ```
-3. Install dependencies (use `sudo` if required) :
+2. To shutdown database without remove the container (use `sudo` if required) :
 
    ```sh
-   npm install
+   docker-compose stop
    ```
 
+3. To shutdown database and remove the container (use `sudo` if required) :
+
+   ```sh
+   docker-compose down
+   ```
 4. Create `.env` file and configure :
    ```JS
    MONGO_URI = <MONGODB_URL>

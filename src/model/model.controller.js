@@ -4,24 +4,12 @@ const Model = require("../model/model.model");
 const Users = require("../users/user.model");
 const { checkAuthorize } = require("../../middlewares/checkAuthorize");
 const {
-  responseServerError,
-  responseInValid,
-  responseSuccess,
-  responseSuccessWithData,
+    responseServerError,
+    responseInValid,
+    responseSuccess,
+    responseSuccessWithData,
 } = require("../../helpers/ResponseRequest");
 
-// const AddModelSchema = Joi.object().keys({
-//     urlSaveModel: Joi.string().required(),
-//     params: Joi.string(),
-//     desc: Joi.string()
-// });
-
-// const EditModelSchema = Joi.object().keys({
-//     modelId: Joi.string().required(),
-//     urlSaveModel: Joi.string(),
-//     params: Joi.string(),
-//     desc: Joi.string()
-// });
 const createModelSchema = Joi.object().keys({
   modelName: Joi.string().required(),
   userCreated: Joi.string(),
@@ -32,48 +20,48 @@ const updateModelSchema = Joi.object().keys({
   userCreated: Joi.string(),
 });
 exports.listModel = async (req, res) => {
-  try {
-    let { search, page, limit, from_time, to_time } = req.query;
-    let options = {};
-    if (search && search !== "") {
-      options = {
-        ...options,
-        $or: [
-          { url: new RegExp(search.toString(), "i") },
-          { type: new RegExp(search.toString(), "i") },
-        ],
-      };
-    }
-    if (from_time && to_time) {
-      options = {
-        ...options,
-        create_At: {
-          $gte: new Date(from_time).toISOString(),
-          $lt: new Date(to_time).toISOString(),
-        },
-      };
-    }
+    try {
+        let { search, page, limit, from_time, to_time } = req.query;
+        let options = {};
+        if (search && search !== "") {
+            options = {
+                ...options,
+                $or: [
+                    { url: new RegExp(search.toString(), "i") },
+                    { type: new RegExp(search.toString(), "i") },
+                ],
+            };
+        }
+        if (from_time && to_time) {
+            options = {
+                ...options,
+                create_At: {
+                    $gte: new Date(from_time).toISOString(),
+                    $lt: new Date(to_time).toISOString(),
+                },
+            };
+        }
 
-    page = parseInt(page) || 1;
-    limit = parseInt(limit) || 10;
-    const data = await Model.find(options)
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean()
-      .exec();
-    const total = await Model.find(options).countDocuments();
-    return responseSuccessWithData({
-      res,
-      data: {
-        data,
-        total,
-        page,
-        last_page: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    return responseServerError({ res, err: error.message });
-  }
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 10;
+        const data = await Model.find(options)
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .lean()
+            .exec();
+        const total = await Model.find(options).countDocuments();
+        return responseSuccessWithData({
+            res,
+            data: {
+                data,
+                total,
+                page,
+                last_page: Math.ceil(total / limit),
+            },
+        });
+    } catch (error) {
+        return responseServerError({ res, err: error.message });
+    }
 };
 exports.createModel = async (req, res) => {
   try {
@@ -107,53 +95,42 @@ exports.updateModel = async (req, res) => {
     if (!modelItem) {
       return responseServerError({ res, err: "Model not found" });
     }
-    delete result.value.modelId;
-    let modelUpdate = await Model.findOneAndUpdate(
-      { modelId: modelId },
-      result.value,
-      {
-        new: true,
-      }
-    );
-    return responseSuccessWithData({
-      res,
-      data: modelUpdate,
-    });
-  } catch (err) {
-    return responseServerError({ res, err: err.message });
-  }
-};
+}catch (error) {
+  return responseServerError({ res, err: error.message });
+}
+}
+
 exports.readModel = async (req, res) => {
-  try {
-    const { modelId } = req.query;
-    let modelItem = await Model.findOne({ modelId: modelId });
-    if (modelItem) {
-      return responseSuccessWithData({ res, data: modelItem });
-    } else {
-      return responseServerError({ res, err: "Model not found" });
+    try {
+        const { modelId } = req.query;
+        let modelItem = await Model.findOne({ modelId: modelId });
+        if (modelItem) {
+            return responseSuccessWithData({ res, data: modelItem });
+        } else {
+            return responseServerError({ res, err: "Model not found" });
+        }
+    } catch (error) {
+        return responseServerError({ res, err: error.message });
     }
-  } catch (error) {
-    return responseServerError({ res, err: error.message });
-  }
 };
 
 exports.deleteModel = async (req, res) => {
-  try {
-    const { modelId } = req.query;
-    //Check if the username has been already registered.
-    var modelItem = await Model.findOne({
-      modelId: modelId,
-    });
+    try {
+        const { modelId } = req.query;
+        //Check if the username has been already registered.
+        var modelItem = await Model.findOne({
+            modelId: modelId,
+        });
 
-    if (!modelItem) {
-      return responseServerError({ res, err: "Model không tồn tại!" });
+        if (!modelItem) {
+            return responseServerError({ res, err: "Model không tồn tại!" });
+        }
+
+        await Model.deleteOne({ modelId: modelId });
+        return responseSuccess({ res });
+    } catch (error) {
+        return responseServerError({ res, err: error.message });
     }
-
-    await Model.deleteOne({ modelId: modelId });
-    return responseSuccess({ res });
-  } catch (error) {
-    return responseServerError({ res, err: error.message });
-  }
 };
 
 // exports.ListModels = async (req, res) => {
