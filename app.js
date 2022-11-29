@@ -50,11 +50,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 (async () => {
   // socket
   _io.on("connection", (socket) => {
+    //=======TRAIN======
     socket.on("start_train_model", async (data) => {
       console.log(socket.id);
       var config = await Lab.findOne({ labId: data.labId }, "config");
       await _io.emit(`start_training`, {
-        
         data_path: config.config.pre_train_data_path,
         model_type: config.config.pre_train_model_type,
         test_size: config.config.pre_train_test_size,
@@ -64,7 +64,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
         train_batch_size: config.config.train_batch_size,
         sid: data.sid,
         labId: data.labId,
-        content: "test",
+        content: "train",
       });
     });
     socket.on(`receive_training_process`, async (data) => {
@@ -73,12 +73,52 @@ app.use(bodyParser.urlencoded({ extended: true }));
       await _io.emit(`send_training_result_${temp["sid"]}`, temp["response"]);
       console.log("receive_training_process: ", temp["response"]);
     });
-    // socket.on('start_test_model',async(data) =>{
-    //     console.log(socket.id);
-    //     await _io.emit(`start_testing`,{
-    //         s
-    //     })
-    // })
+    //=======TRAINED======
+    //=======TEST======
+    socket.on("start_test_model", async (data) => {
+      console.log(socket.id);
+      var config = await Lab.findOne({ labId: data.labId }, "config");
+      _io.emit(`start_testing`, {
+        data_path: config.config.pre_train_data_path,
+        model_type: config.config.pre_train_model_type,
+        test_size: config.config.pre_train_test_size,
+        number_records: config.config.pre_train_number_records,
+
+        sid: data.sid,
+        labId: data.labId,
+        content: "test",
+      });
+    });
+
+    socket.on(`receive_testing_process`, async (data) => {
+      const temp = JSON.parse(data);
+      console.log(temp);
+      await _io.emit(`send_testing_result_${temp["sid"]}`, temp["response"]);
+      console.log("receive_testing_process: ", temp["response"]);
+    });
+    //=======TESTED======
+ 
+    //=======INFER======
+    socket.on("start_infer_model", async (data) => {
+      console.log(socket.id);
+      var config = await Lab.findOne({ labId: data.labId }, "config");
+      _io.emit(`start_infering`, {
+        feature_set: config.config.pre_inf_feature_set,
+
+        sid: data.sid,
+        labId: data.labId,
+        content: "inf",
+      });
+    });
+
+    socket.on(`receive_infering_process`, async (data) => {
+      const temp = JSON.parse(data);
+      console.log(temp);
+      await _io.emit(`send_infering_result_${temp["sid"]}`, temp["response"]);
+      console.log("receive_infering_process: ", temp["response"]);
+    });
+    //=======INFERED======
+
   });
 
   app.get("/ping", (req, res) => {

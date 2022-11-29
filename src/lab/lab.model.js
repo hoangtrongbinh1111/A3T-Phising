@@ -19,7 +19,7 @@ const labSchema = new Schema(
             pre_train_number_records:{type:Number,default:100},
 
             // pre_inf_data_path : {type:String,default:null},
-            // pre_inf_feature_set:{type:String,default:'full_set'},
+            pre_inf_feature_set:{type:String,default:'full_set'},
 
             x_train : {type:String, default : null},
             y_train : {type:String, default : null},
