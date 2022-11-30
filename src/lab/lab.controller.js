@@ -9,20 +9,63 @@ const {
     responseSuccessWithData,
 } = require("../../helpers/ResponseRequest");
 const path = require("path");
-const { LAB_FOLDER, LAB_SUBFOLDER } = require("../../helpers/constant");
-const { getDir, removeDir } = require("../../helpers/file");
+const {
+    LAB_FOLDER,
+    LAB_SUBFOLDER,
+    CONFIG_FOLDER,
+    FILE_CFG,
+} = require("../../helpers/constant");
+const { getDir, removeDir, createFile } = require("../../helpers/file");
+const { type } = require("os");
+const { config } = require("dotenv");
 
 const labCreateSchema = Joi.object().keys({
     labName: Joi.string().required(),
     userCreated: Joi.string().required(),
 });
 
+const labEditModelAndDataset = Joi.object().keys({
+    labId: Joi.string().required(),
+    modelId: Joi.string().required(),
+    datasetId: Joi.string().required(),
+});
+
 const labUpdateSchema = Joi.object().keys({
     labId: Joi.string().required(),
     labName: Joi.string().optional(),
-    configPath: Joi.string().optional(),
 });
-exports.listLab = async (req, res) => {
+
+const configUpdateSchema = Joi.object().keys({
+    labId: Joi.string().required(),
+    config: {
+        pre_train_data_path: Joi.string(),
+        pre_train_model_type: Joi.string(),
+        pre_train_feature_set: Joi.string(),
+        pre_train_test_size: Joi.number(),
+        pre_train_random_state: Joi.number(),
+        pre_train_number_records: Joi.number(),
+
+        pre_inf_data_path: Joi.string(),
+        pre_inf_feature_set: Joi.string(),
+
+        x_train: Joi.string(),
+        y_train: Joi.string(),
+        train_num_epoch: Joi.number(),
+        train_batch_size: Joi.number(),
+        train_model_type: Joi.number(),
+        train_model_config: Joi.number(),
+
+        x_test: Joi.array(),
+        y_test: Joi.array(),
+        test_output_folder: Joi.string(),
+        test_epoch_num: Joi.string(),
+
+        inf_output_foler: Joi.string(),
+        inf_data_path: Joi.array(),
+        inf_epoch_num: Joi.string(),
+    },
+});
+exports.listLab = async(req, res) => {
     try {
         let { search, page, limit, from_time, to_time } = req.query;
         let options = {};
@@ -67,7 +110,7 @@ exports.listLab = async (req, res) => {
     }
 };
 
-exports.createLab = async (req, res) => {
+exports.createLab = async(req, res) => {
     try {
         const result = labCreateSchema.validate(req.body);
         if (result.error) {
@@ -77,8 +120,8 @@ exports.createLab = async (req, res) => {
         const labId = uuid();
         // create folder
         const root = path.resolve("./");
-        // const dir = getDir({ dir: root + `/${LAB_FOLDER}` });
         const labDir = getDir({ dir: root + `/${LAB_FOLDER}/${labId}` });
+
         const subLabDir = {};
         Object.keys(LAB_SUBFOLDER).map((subfolder) => {
             const dirPath = `/${LAB_FOLDER}/${labId}/${LAB_SUBFOLDER[subfolder]}`;
@@ -95,6 +138,7 @@ exports.createLab = async (req, res) => {
             trainLogPath: subLabDir["trainLogPath"],
             testLogPath: subLabDir["testLogPath"],
             trainedModelPath: subLabDir["trainedModelPath"],
+            // config : ,
         };
         const newLab = new Lab(labData);
         await newLab.save();
@@ -105,31 +149,23 @@ exports.createLab = async (req, res) => {
     }
 };
 
-exports.updateLab = async (req, res) => {
+exports.updateLab = async(req, res) => {
     try {
         const result = labUpdateSchema.validate(req.body);
         if (result.error) {
             return responseServerError({ res, err: result.error.message });
         }
-        const { labId, labName, configPath } = req.body;
+        const { labId, labName } = req.body;
         var labItem = await Lab.findOne({ labId: labId });
         if (!labItem) {
             return responseServerError({ res, err: "Lab not found" });
         }
-        delete result.value.labId;
-        let labUpdate = await Lab.findOneAndUpdate({ labId: labId }, result.value, {
-            new: true,
-        });
-        return responseSuccessWithData({
-            res,
-            data: labUpdate,
-        });
-    } catch (err) {
-        return responseServerError({ res, err: err.message });
-    }
-};
+    } catch (error) {
+        return responseServerError({ res, err: error.message });
+    };
+}
 
-exports.readLab = async (req, res) => {
+exports.readLab = async(req, res) => {
     try {
         const { labId } = req.query;
         let labItem = await Lab.findOne({ labId: labId });
@@ -143,7 +179,7 @@ exports.readLab = async (req, res) => {
     }
 };
 
-exports.deleteLab = async (req, res) => {
+exports.deleteLab = async(req, res) => {
     try {
         const { labId } = req.query;
 
@@ -165,3 +201,101 @@ exports.deleteLab = async (req, res) => {
         return responseServerError({ res, err: err.message });
     }
 };
+
+exports.editModelAndDatasetLab = async(req, res) => {
+    try {
+        const result = labEditModelAndDataset.validate(req.body);
+        if (result.error) {
+            return responseServerError({ res, err: result.error.message });
+        }
+        const { labId, modelId, datasetId } = req.body;
+        var labItem = await Lab.findOne({ labId: labId });
+        if (!labItem) {
+            return responseServerError({ res, err: "Lab not found" });
+        }
+        delete result.value.labId;
+        let labUpdate = await Lab.findOneAndUpdate({ labId: labId }, result.value, {
+            new: true,
+        });
+        return responseSuccessWithData({
+            res,
+            data: labUpdate,
+        });
+    } catch (err) {
+        return responseServerError({ res, err: err.message });
+    }
+};
+
+exports.getConfig = async(req, res) => {
+    try {
+        const { labId } = req.query;
+        var labItem = await Lab.findOne({ labId: labId }, "config");
+        if (labItem) {
+            return responseSuccessWithData({ res, data: labItem });
+        } else {
+            return responseServerError({ res, err: "Lab not found" });
+        }
+    } catch (error) {
+        return responseServerError({ res, err: error.message });
+    }
+};
+
+exports.editConfig = async(req, res) => {
+    try {
+        const result = configUpdateSchema.validate(req.body);
+        if (result.error) {
+            return responseServerError({ res, err: result.error.message });
+        }
+        const { labId, config } = req.body;
+
+        var labItem = await Lab.findOne({ labId: labId });
+        if (!labItem) {
+            return responseServerError({ res, err: "Lab not found" });
+        }
+        delete result.value.labId;
+        let labUpdate = await Lab.findOneAndUpdate({ labId: labId }, { $set: { config: config } }, {
+            new: true,
+        });
+        return responseSuccessWithData({
+            res,
+            data: labUpdate,
+        });
+    } catch (err) {
+        return responseServerError({ res, err: err.message });
+    }
+};
+
+exports.trainModule = async(req, res) => {
+    try {
+        var { labId } = req.body;
+        var labConfig = await Lab.findOne({ labId: labId }, "config");
+        if (!labConfig) {
+            return responseServerError({ res, err: "Lab not found" });
+        }
+        //tạo 1 mảng lưu các key value của Train Config
+        var keysTrainConfig = [];
+        //thêm các key value vào mảng
+        Object.entries(labConfig.config).forEach((cf) => {
+            if (cf[0].includes("train") && !cf[0].includes("pre"))
+                keysTrainConfig.push(cf);
+        });
+        var command = "python3 demo.py";
+        //nối các key value vào command
+        var result = keysTrainConfig.reduce((acc, key) => {
+            return acc + ` --${key[0]} ${key[1].toString()}`;
+        }, command);
+
+        try {
+            // exec('activate phising', function (error, stdout, stderr) {  //active anaconda env
+            // })
+            // exec(result, (error, stdout, stderr) => {
+            //   console.log(error.toString());
+            // })
+            return responseSuccess({ res });
+        } catch (e) {
+            return responseServerError({ res, err: e.message });
+        }
+    } catch (err) {
+        return responseServerError({ res, err: err.message });
+    }
+}

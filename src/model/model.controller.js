@@ -11,15 +11,13 @@ const {
 } = require("../../helpers/ResponseRequest");
 
 const createModelSchema = Joi.object().keys({
-    modelName: Joi.string().required(),
-    algorithmName: Joi.string(),
-    userCreated: Joi.string(),
+  modelName: Joi.string().required(),
+  userCreated: Joi.string(),
 });
 const updateModelSchema = Joi.object().keys({
-    modelId: Joi.string().required(),
-    modelName: Joi.string(),
-    algorithmName: Joi.string(),
-    userCreated: Joi.string(),
+  modelId: Joi.string().required(),
+  modelName: Joi.string(),
+  userCreated: Joi.string(),
 });
 exports.listModel = async (req, res) => {
     try {
@@ -66,52 +64,42 @@ exports.listModel = async (req, res) => {
     }
 };
 exports.createModel = async (req, res) => {
-    try {
-        const result = createModelSchema.validate(req.body);
-        if (result.error) {
-            return responseServerError({ res, err: result.error.message });
-        }
-        const { modelName, algorithmName, userCreated } = req.body;
-        const modelId = uuid();
-
-        const modelData = {
-            modelId,
-            modelName,
-            userCreated,
-            algorithmName,
-        };
-        const newModel = new Model(modelData);
-        await newModel.save();
-        return responseSuccessWithData({ res, data: newModel });
-    } catch (err) {
-        return responseServerError({ res, err: err.message });
+  try {
+    const result = createModelSchema.validate(req.body);
+    if (result.error) {
+      return responseServerError({ res, err: result.error.message });
     }
+    const { modelName, userCreated } = req.body;
+    const modelId = uuid();
+
+    const modelData = {
+      modelId,
+      modelName,
+      userCreated,
+    };
+    const newModel = new Model(modelData);
+    await newModel.save();
+    return responseSuccessWithData({ res, data: newModel });
+  } catch (err) {
+    return responseServerError({ res, err: err.message });
+  }
 };
 exports.updateModel = async (req, res) => {
-    try {
-        const result = updateModelSchema.validate(req.body);
-        if (result.error) {
-            return responseServerError({ res, err: result.error.message });
-        }
-        const { modelId, modelName, algorithmName, userCreated } = req.body;
-        var modelItem = await Model.findOne({ modelId: modelId });
-        if (!modelItem) {
-            return responseServerError({ res, err: "Model not found" });
-        }
-        delete result.value.modelId;
-        let modelUpdate = await Model.findOneAndUpdate({ modelId: modelId },
-            result.value, {
-            new: true,
-        }
-        );
-        return responseSuccessWithData({
-            res,
-            data: modelUpdate,
-        });
-    } catch (err) {
-        return responseServerError({ res, err: err.message });
+  try {
+    const result = updateModelSchema.validate(req.body);
+    if (result.error) {
+      return responseServerError({ res, err: result.error.message });
     }
-};
+    const { modelId, modelName, userCreated } = req.body;
+    var modelItem = Model.findOne({ modelId: modelId });
+    if (!modelItem) {
+      return responseServerError({ res, err: "Model not found" });
+    }
+}catch (error) {
+  return responseServerError({ res, err: error.message });
+}
+}
+
 exports.readModel = async (req, res) => {
     try {
         const { modelId } = req.query;

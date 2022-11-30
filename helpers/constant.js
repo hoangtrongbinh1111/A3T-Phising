@@ -6,7 +6,8 @@ const LAB_SUBFOLDER = {
     testLogPath: "log_test",
     trainedModelPath: "trained_model"
 };
-
+const CONFIG_FOLDER = "config";
+const FILE_CFG = ".cfg";
 const DATA_FOLDER = "datas";
 const DATA_SUBFOLDER = {
   trainFolder : "train",
@@ -15,6 +16,8 @@ const DATA_SUBFOLDER = {
 }
 
 module.exports = {
+  CONFIG_FOLDER,
+  FILE_CFG,
   MALICIOUS,
   UNMALICIOUS,
   DATA_FOLDER,
