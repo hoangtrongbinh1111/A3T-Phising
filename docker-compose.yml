@@ -25,6 +25,7 @@ services:
     volumes:
       - .:/home/node/app
       - /home/node/app/node_modules
+      - /home/hoangtrongbinh/HoangTrongBinh/ATTT/modelDir:/home/node/app/modelDir
     ports:
       - 6789:6789
 
