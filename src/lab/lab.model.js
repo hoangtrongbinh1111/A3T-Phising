@@ -11,16 +11,6 @@ const labSchema = new Schema(
         testLogPath: { type: String, default: null },
         trainedModelPath: { type: String, default: null },
         config:  {
-            pre_train_data_path: { type: String, default:'./data/data.csv'},
-            pre_train_model_type:{type: String, default:"sequential"},
-            // pre_train_feature_set:{type: String, default:"full_set"},
-            pre_train_test_size:{type: Number,default:0.3},
-            // pre_train_random_state:{type: Number, default: random(1,100)}, 
-            pre_train_number_records:{type:Number,default:100},
-
-            // pre_inf_data_path : {type:String,default:null},
-            pre_inf_feature_set:{type:String,default:'full_set'},
-
             x_train : {type:String, default : null},
             y_train : {type:String, default : null},
             train_num_epoch : {type: Number, default:10},

@@ -80,6 +80,7 @@ exports.createDataset = async (req, res) => {
         }
         const { dataName, userUpload } = req.body;
         const datasetId = uuid();
+        
         const savePath = `/${DATA_FOLDER}/${datasetId}`;
         //create folder
         const root = path.resolve("./");
@@ -169,3 +170,5 @@ exports.deleteDataset = async (req, res) => {
         return responseServerError({ res, err: err.message });
     }
 };
+
+exports.datasetCreateSchema
