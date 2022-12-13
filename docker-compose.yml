@@ -26,6 +26,7 @@ services:
       - .:/home/node/app
       - /home/node/app/node_modules
       - /home/hoangtrongbinh/HoangTrongBinh/ATTT/modelDir:/home/node/app/modelDir
+      - /home/hoangtrongbinh/HoangTrongBinh/ATTT/datasetlDir:/home/node/app/datasetlDir
     ports:
       - 6789:6789
 
