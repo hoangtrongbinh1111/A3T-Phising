@@ -83,9 +83,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
         model_type: config.config.pre_train_model_type,
         test_size: config.config.pre_train_test_size,
         number_records: config.config.pre_train_number_records,
-
         sid: data.sid,
         labId: data.labId,
+        epoch_selected: data.epoch_selected,
         content: "test",
       });
     });
@@ -104,7 +104,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
       var config = await Lab.findOne({ labId: data.labId }, "config");
       _io.emit(`start_infering`, {
         feature_set: config.config.pre_inf_feature_set,
-
+        epoch_selected: data.epoch_selected,
         sid: data.sid,
         labId: data.labId,
         content: "inf",
