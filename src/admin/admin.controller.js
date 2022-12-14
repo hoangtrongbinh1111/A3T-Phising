@@ -1,5 +1,18 @@
 const Joi = require("joi");
 const Users = require("../users/user.model");
+
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, '/tmp/my-uploads')
+//   },
+//   filename: function (req, file, cb) {
+//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+//     cb(null, file.fieldname + '-' + uniqueSuffix)
+//   }
+// })
+
+// const upload = multer({ storage: storage })
+
 const { responseServerError, responseInValid, responseSuccessWithData } = require("../../helpers/ResponseRequest");
 const { checkAuthorize } = require("../../middlewares/checkAuthorize");
 
@@ -74,3 +87,13 @@ exports.BlockUser = async (req, res) => {
     return responseServerError({ res, err: err.message });
   }
 };
+
+// exports.UploadSingle = async (res, req , next) => { 
+//   console.log(req.file)
+
+// }
+
+// exports.UploadMulti = async (res,req,next) => {
+//   console.log(req.file)
+
+// }

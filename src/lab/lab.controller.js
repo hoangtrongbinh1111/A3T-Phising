@@ -64,6 +64,8 @@ const configUpdateSchema = Joi.object().keys({
         inf_data_path: Joi.array(),
         inf_epoch_num: Joi.string(),
     },
+    modelId: Joi.string(),
+    datasetId: Joi.string(),    
 });
 exports.listLab = async(req, res) => {
     try {
@@ -240,62 +242,35 @@ exports.getConfig = async(req, res) => {
     }
 };
 
-exports.editConfig = async(req, res) => {
+exports.editModelDataAndConfig = async(req, res) => {
     try {
         const result = configUpdateSchema.validate(req.body);
         if (result.error) {
             return responseServerError({ res, err: result.error.message });
         }
-        const { labId, config } = req.body;
+        const { labId,modelId, datasetId, config } = req.body;
 
         var labItem = await Lab.findOne({ labId: labId });
         if (!labItem) {
             return responseServerError({ res, err: "Lab not found" });
         }
         delete result.value.labId;
-        let labUpdate = await Lab.findOneAndUpdate({ labId: labId }, { $set: { config: config } }, {
+        let configUpdate = await Lab.findOneAndUpdate({ labId: labId }, { $set: { config: config } }, {
+            new: true,
+        });
+        let modelUpdate = await Lab.findOneAndUpdate({ labId: labId }, { $set: { modelId: modelId } }, {
+            new: true,
+        });
+        let labUpdate = await Lab.findOneAndUpdate({ labId: labId }, { $set: { datasetId: datasetId } }, {
             new: true,
         });
         return responseSuccessWithData({
-            res,
-            data: labUpdate,
-        });
+            res,    
+            data: {
+                labUpdate,
+        }});
     } catch (err) {
         return responseServerError({ res, err: err.message });
     }
 };
 
-exports.trainModule = async(req, res) => {
-    try {
-        var { labId } = req.body;
-        var labConfig = await Lab.findOne({ labId: labId }, "config");
-        if (!labConfig) {
-            return responseServerError({ res, err: "Lab not found" });
-        }
-        //tạo 1 mảng lưu các key value của Train Config
-        var keysTrainConfig = [];
-        //thêm các key value vào mảng
-        Object.entries(labConfig.config).forEach((cf) => {
-            if (cf[0].includes("train") && !cf[0].includes("pre"))
-                keysTrainConfig.push(cf);
-        });
-        var command = "python3 demo.py";
-        //nối các key value vào command
-        var result = keysTrainConfig.reduce((acc, key) => {
-            return acc + ` --${key[0]} ${key[1].toString()}`;
-        }, command);
-
-        try {
-            // exec('activate phising', function (error, stdout, stderr) {  //active anaconda env
-            // })
-            // exec(result, (error, stdout, stderr) => {
-            //   console.log(error.toString());
-            // })
-            return responseSuccess({ res });
-        } catch (e) {
-            return responseServerError({ res, err: e.message });
-        }
-    } catch (err) {
-        return responseServerError({ res, err: err.message });
-    }
-}

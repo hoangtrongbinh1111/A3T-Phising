@@ -12,7 +12,5 @@ router.delete("/delete", cleanBody, labController.deleteLab);
 router.patch("/edit/md&dt",cleanBody,labController.editModelAndDatasetLab);
 //api user cấu hình 
 router.get("/config",cleanBody,labController.getConfig);
-router.patch("/edit/config",cleanBody,labController.editConfig)
-//api user huấn luyện 
-router.post("/train",cleanBody,labController.trainModule)
+router.patch("/edit/config",cleanBody,labController.editModelDataAndConfig)
 module.exports = router;
