@@ -5,10 +5,13 @@ const Schema = mongoose.Schema;
 const logSchema = new Schema(
   {
     logId: { type: String, unique: true, required: true },
-    url: {type: String, required: true},
-    timeExecute: {type: Date, required: true},
-    result: { type: Number, required: true },
-    userId: { type: String, required: true }
+    trainHistory: [
+      {train_acc: String, val_acc: String}
+    ],
+    testHistory: [
+      {test_acc: String, model_checkpoint_number: String}
+    ],
+    inferenceHistory: {label: String,score: String,url: String, model_checkpoint_number: String}
   },
   {
     timestamps: {
