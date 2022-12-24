@@ -191,7 +191,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
   app.use("/api/v1/model", modelRoutes);
 
   const PORT = process.env.PORT || 8686;
-  server.listen(PORT, "0.0.0.0", () => {
+  server.listen(PORT, "api-service", () => {
     console.log("Server started listening on PORT : " + PORT);
   });
 })();
