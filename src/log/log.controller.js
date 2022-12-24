@@ -7,6 +7,7 @@ const { checkAuthorize } = require("../../middlewares/checkAuthorize");
 const Users = require("../users/user.model");
 const BlackList = require("../blacklist/blacklist.model");
 const Log = require("./log.model");
+const Lab = require("../lab/lab.model");
 
 const logDetectSchema = Joi.object().keys({
     url: Joi.string().required()
@@ -56,6 +57,25 @@ exports.ListLogs = async (req, res) => {
                 last_page: Math.ceil(total / limit)
             }
         });
+    } catch (error) {
+        return responseServerError({ res, err: error.message });
+    }
+};
+
+
+exports.readLog = async(req, res) => {
+    try {
+        const { labId } = req.query;
+        let {config, logId} = await Lab.findOne({ labId: labId });
+        let logData = await Log.findOne({ logId: logId });
+        if (logData) {
+            return responseSuccessWithData({ res, data: {
+                logData: logData,
+                trainConfig: config
+            } });
+        } else {
+            return responseServerError({ res, err: "Lab not found" });
+        }
     } catch (error) {
         return responseServerError({ res, err: error.message });
     }

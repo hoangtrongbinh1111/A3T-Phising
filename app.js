@@ -6,7 +6,9 @@ const path = require("path");
 const multer = require("multer");
 require("dotenv").config();
 const Lab = require("./src/lab/lab.model");
-const dataset = require("./src/dataset/Dataset.model");
+const Log = require("./src/log/log.model");
+const Model = require("./src/model/model.model");
+const Dataset = require("./src/dataset/Dataset.model");
 const { v4: uuid } = require("uuid"); //gen id
 const { DATA_FOLDER,DATA_SUBFOLDER} = require('./helpers/constant')
 const {getDir,removeDir} = require('./helpers/file')
@@ -59,25 +61,27 @@ app.use(bodyParser.urlencoded({ extended: true }));
   _io.on("connection", (socket) => {
     //=======TRAIN======
     socket.on("start_train_model", async (data) => {
-      console.log(socket.id);
-      var config = await Lab.findOne({ labId: data.labId }, "config");
-      var pklPath = await Lab.findOne({datasetId: data.datasetId},"savePath")
+      const {config, logId} = await Lab.findOne({ labId: data.labId });
+      const modelData = await Model.findOne({ modelId: config.modelId });
+      console.log(logId);
       await _io.emit(`start_training`, {
         data_dir: "data/train.csv",
-        learning_rate: 0.001,
-        epochs: 2,
-        batch_size: 8, 
-        val_size: 0.2,
-        model_type: "lstm",
-        sid: data.sid,
-        labId: data.labId
+        learning_rate: config.learning_rate,
+        epochs: config.epochs,
+        batch_size: config.batch_size, 
+        val_size: config.val_size,
+        model_type: modelData.modelName,
+        labId: data.labId 
       });
     });
     socket.on(`receive_training_process`, async (data) => {
-      const temp = JSON.parse(data);
-      console.log(temp);
-      await _io.emit(`send_training_result_${temp["sid"]}`, temp["response"]);
-      console.log("receive_training_process: ", temp["response"]);
+      const dataRecieve = JSON.parse(data);
+      await _io.emit(`send_training_result_${dataRecieve["labId"]}`, dataRecieve["response"]);
+      let {logId} = await Lab.findOne({ labId: dataRecieve["labId"] });
+      await Log.findOneAndUpdate(
+        { logId: logId }, 
+        { $push: { trainHistory: dataRecieve["response"] } }
+    );
     });
     //=======TRAINED======
     //=======TEST======
@@ -88,16 +92,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
         test_data_dir: "data/test.csv", 
         ckpt_number: 1,
         model_type: "lstm",
-        sid: data.sid,
         labId: data.labId
       });
     });
 
     socket.on(`receive_testing_process`, async (data) => {
-      const temp = JSON.parse(data);
-      console.log(temp);
-      await _io.emit(`send_testing_result_${temp["sid"]}`, temp["response"]);
-      console.log("receive_testing_process: ", temp["response"]);
+      const dataRecieve = JSON.parse(data);
+      await _io.emit(`send_testing_result_${dataRecieve["labId"]}`, dataRecieve["response"]);
+      let {logId} = await Lab.findOne({ labId: dataRecieve["labId"] });
+      await Log.findOneAndUpdate(
+        { logId: logId }, 
+        { $push: { testHistory: dataRecieve["response"] } })
     });
     //=======TESTED======
 
@@ -109,16 +114,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
         url_sample: "http://www.dvdsreleasedates.com/top-movies.php", 
         ckpt_number: 1,
         model_type: "lstm",
-        sid: data.sid,
         labId: data.labId
       });
     });
 
     socket.on(`receive_infering_process`, async (data) => {
-      const temp = JSON.parse(data);
-      console.log(temp);
-      await _io.emit(`send_infering_result_${temp["sid"]}`, temp["response"]);
-      console.log("receive_infering_process: ", temp["response"]);
+      const dataRecieve = JSON.parse(data);
+      await _io.emit(`send_infering_result_${dataRecieve["labId"]}`, dataRecieve["response"]);
+      let {logId} = await Lab.findOne({ labId: dataRecieve["labId"] });
+      await Log.findOneAndUpdate(
+        { logId: logId }, 
+        { $push: { inferenceHistory: dataRecieve["response"] } })
     });
     //=======INFERED======
   });
@@ -138,49 +144,50 @@ app.use(bodyParser.urlencoded({ extended: true }));
 });
   const storage = multer.diskStorage({
     destination: async function (req, file, cb) {
-        const result = datasetCreateSchema.validate(req.body);
-        if (result.error) {
-        }
-        const { dataName, userUpload } = req.body;
+        // const result = datasetCreateSchema.validate(req.body);
+        // if (result.error) {
+        // }
+        // const { dataName, userUpload } = req.body;
         const datasetId = uuid();
         
-        const savePath = `${DATA_FOLDER}/${datasetId}/${DATA_SUBFOLDER['uploadsFolder']}/data.csv`;
-        //create folder
-        const root = path.resolve("./");
-        // const dir = getDir({ dir: root + `/${DATA_FOLDER}` });
-        const dataDir = getDir({
-            dir: root + `/${DATA_FOLDER}/${datasetId}`,
-        });
-        Object.keys(DATA_SUBFOLDER).map((subfolder) => {
-            getDir({
-                dir: root + `/${DATA_FOLDER}/${datasetId}/${DATA_SUBFOLDER[subfolder]}`,
-            });
-        });
-        //end create folder
-        const data = {
-            datasetId,
-            dataName,
-            userUpload,
-            savePath,
-        };
-        const newData = new dataset(data);
-        await newData.save();
+        // const savePath = `${DATA_FOLDER}/${datasetId}/${DATA_SUBFOLDER['uploadsFolder']}/data.csv`;
+        // //create folder
+        // const root = path.resolve("./");
+        // // const dir = getDir({ dir: root + `/${DATA_FOLDER}` });
+        // const dataDir = getDir({
+        //     dir: root + `/${DATA_FOLDER}/${datasetId}`,
+        // });
+        // Object.keys(DATA_SUBFOLDER).map((subfolder) => {
+        //     getDir({
+        //         dir: root + `/${DATA_FOLDER}/${datasetId}/${DATA_SUBFOLDER[subfolder]}`,
+        //     });
+        // });
+        // //end create folder
+        // const data = {
+        //     datasetId,
+        //     dataName,
+        //     userUpload,
+        //     savePath,
+        // };
+        // const newData = new dataset(data);
+        // await newData.save();
 
-        cb(null, root + `/${DATA_FOLDER}/${datasetId}/${DATA_SUBFOLDER['uploadsFolder']}` );
-   
-    
+        cb(null, `./${DATA_FOLDER}/${datasetId}/${DATA_SUBFOLDER['uploadsFolder']}` );
     },
     filename: function (req, file, cb) {
-      cb(null, file.fieldname +  ".csv");
+      cb(null, file.fieldname);
     },
   });
-  const upload = multer({ storage: storage });
+  const upload = multer({ storage: storage }).array("files", 2);
 
-  app.post("/api/v1/admin/uploadFile", upload.single("data"), async (req, res, next) => {
-    //lưu file xong
-      
-    }
-  );
+  app.post("/api/v1/admin/uploadFile", async (req, res, next) => {
+    upload(req,res,function(err) {
+      if(err) {
+          return res.end("Error uploading file.");
+      }
+      res.end("File is uploaded");
+  });
+  });
 
   app.use("/api/v1/data", dataRoutes);
   app.use("/api/v1/lab", labRoutes);
