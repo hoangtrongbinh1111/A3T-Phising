@@ -3,6 +3,8 @@ require("dotenv").config();
 const { v4: uuid } = require("uuid");
 const Lab = require("./lab.model");
 const Log = require("../log/log.model");
+const Model = require("../model/model.model");
+const Dataset = require("../dataset/Dataset.model");
 const {
     responseServerError,
     responseInValid,
@@ -19,6 +21,7 @@ const {
 const { getDir, removeDir, createFile } = require("../../helpers/file");
 const { type } = require("os");
 const { config } = require("dotenv");
+const { isValidObjectId, Types } = require("mongoose");
 
 const labCreateSchema = Joi.object().keys({
     labName: Joi.string().required(),
@@ -73,7 +76,7 @@ exports.listLab = async(req, res) => {
 
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
-        const data = await Lab.find(options)
+        const data = await Lab.find(options).populate('model').populate('dataset')
             .skip((page - 1) * limit)
             .limit(limit)
             .lean()
@@ -143,7 +146,7 @@ exports.createLab = async(req, res) => {
 exports.readLab = async(req, res) => {
     try {
         const { labId } = req.query;
-        let labItem = await Lab.findOne({ labId: labId });
+        let labItem = await Lab.findOne({ labId: labId }).populate('model').populate('dataset');
         if (labItem) {
             return responseSuccessWithData({ res, data: labItem });
         } else {
@@ -205,12 +208,14 @@ exports.editModelDataAndConfig = async(req, res) => {
         }
         delete result.value.labId;
         let configUpdate = null;
+        const modelData = await Model.findOne({ modelId: config.modelId });
+        const datasetData = await Dataset.findOne({ datasetId: config.datasetId });
         if (labName) {
-            configUpdate = await Lab.findOneAndUpdate({ labId: labId }, { $set: { config: config, labName: labName } }, {
+            configUpdate = await Lab.findOneAndUpdate({ labId: labId }, { $set: { config: config, labName: labName,  model: Types.ObjectId(modelData._id), dataset: Types.ObjectId(datasetData._id) } }, {
                 new: true,
             });
         } else {
-            configUpdate = await Lab.findOneAndUpdate({ labId: labId }, { $set: { config: config } }, {
+            configUpdate = await Lab.findOneAndUpdate({ labId: labId }, { $set: { config: config, model: Types.ObjectId(modelData._id), dataset: Types.ObjectId(datasetData._id) } }, {
                 new: true,
             });
         }
