@@ -48,6 +48,7 @@ var _io = require("socket.io")(server, {
   cors: {
     origin: "*",
   },
+  secure: true
 });
 
 app.use(express.json()); // for parsing application/json
@@ -61,9 +62,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
   _io.on("connection", (socket) => {
     //=======TRAIN======
     socket.on("start_train_model", async (data) => {
-      const {config, logId} = await Lab.findOne({ labId: data.labId });
+      const {config} = await Lab.findOne({ labId: data.labId });
       const modelData = await Model.findOne({ modelId: config.modelId });
-      console.log(logId);
       await _io.emit(`start_training`, {
         data_dir: "data/train.csv",
         learning_rate: config.learning_rate,
@@ -86,12 +86,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
     //=======TRAINED======
     //=======TEST======
     socket.on("start_test_model", async (data) => {
-      console.log(socket.id);
-      var pklPath = await Lab.findOne({datasetId: data.datasetId},"savePath")
+      const {config} = await Lab.findOne({ labId: data.labId });
+      const modelData = await Model.findOne({ modelId: config.modelId });
       _io.emit(`start_testing`, {
         test_data_dir: "data/test.csv", 
-        ckpt_number: 1,
-        model_type: "lstm",
+        ckpt_number: data.epoch_selected,
+        model_type: modelData.modelName,
         labId: data.labId
       });
     });
@@ -108,12 +108,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
     //=======INFER======
     socket.on("start_infer_model", async (data) => {
-      console.log(socket.id);
-      var config = await Lab.findOne({ labId: data.labId }, "config");
+      const {config} = await Lab.findOne({ labId: data.labId });
+      const modelData = await Model.findOne({ modelId: config.modelId });
       _io.emit(`start_infering`, {
-        url_sample: "http://www.dvdsreleasedates.com/top-movies.php", 
-        ckpt_number: 1,
-        model_type: "lstm",
+        url_sample: data.url, 
+        ckpt_number: data.epoch_selected,
+        model_type: modelData.modelName,
         labId: data.labId
       });
     });
