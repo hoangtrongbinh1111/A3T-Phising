@@ -12,10 +12,12 @@ const labSchema = new Schema(
             epochs: { type: Number, default: 2 },
             batch_size: { type: Number, default: 8 },
             val_size: { type: Number, default: 0.2 },
-            modelId: { type: String, default: null },
-            datasetId: { type: String, default: null }
+            modelId: { type: Schema.Types.String },
+            datasetId: { type: Schema.Types.String }
         },
-        logId: {type:String,default: null}
+        logId: {type:String,default: null},
+        model: { type: Schema.Types.ObjectId, ref: 'model' },
+        dataset: { type: Schema.Types.ObjectId, ref: 'dataset' }
     },
     {
         timestamps: {
