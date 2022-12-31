@@ -6,12 +6,20 @@ const logSchema = new Schema(
   {
     logId: { type: String, unique: true, required: true },
     trainHistory: [
-      {train_acc: String, val_acc: String}
+      {trainId: String, trainProcess: [{
+        train_acc: String, val_acc: String,
+      }]}
     ],
     testHistory: [
-      {test_acc: String, model_checkpoint_number: String}
+      {testId: String, testProcess: [{
+        test_acc: String, model_checkpoint_number: String
+      }]}
     ],
-    inferenceHistory: {label: String,score: String,url: String, model_checkpoint_number: String}
+    inferHistory:  [
+      {inferId: String, inferProcess: [{
+        label: String,score: String,url: String, model_checkpoint_number: String
+      }]}
+    ]
   },
   {
     timestamps: {

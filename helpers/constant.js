@@ -10,9 +10,6 @@ const LAB_SUBFOLDER = {
 const CONFIG_FOLDER = "config";
 const FILE_CFG = ".cfg";
 const DATA_SUBFOLDER = {
-    trainFolder : "train",
-    testFolder :  "test",
-    validationFolder : "validation",
     uploadsFolder : "uploads",
   }
 module.exports = {           
@@ -21,7 +18,6 @@ module.exports = {
     FILE_CFG,
     MALICIOUS,
     UNMALICIOUS,
-    DATA_FOLDER,
     DATA_SUBFOLDER,
     LAB_FOLDER,
     LAB_SUBFOLDER
