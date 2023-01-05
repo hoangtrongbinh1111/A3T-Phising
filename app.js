@@ -157,6 +157,27 @@ app.use(bodyParser.urlencoded({ extended: true }));
       );
     });
     //=======INFERED======
+    //=======DATASET INFORMATION======
+    socket.on("start_update_detail_dataset", async (data) => {
+      const {config} = await Lab.findOne({ labId: data.labId });
+      const modelData = await Model.findOne({ modelId: config.modelId });
+      const datasetData = await Dataset.findOne({ datasetId: data.datasetId });
+      await _io.emit(`start_reviewing_dataset`, {
+        data_dir: `${datasetData.savePath}/train.csv`,
+        val_size: config.val_size,
+        labId: data.labId,
+        datasetId: data.datasetId,
+        model_type: modelData.modelName,
+        test_data_dir: `${datasetData.savePath}/test.csv`
+      });
+    });
+    socket.on(`receive_reviewing_dataset_process`, async (data) => {
+      const dataRecieve = JSON.parse(data);
+      let datasetUpdate = await Dataset.findOneAndUpdate({ datasetId: dataRecieve["datasetId"] }, dataRecieve["response"], {
+                    new: true
+                }); 
+      await _io.emit(`send_reviewing_dataset_result_${dataRecieve["labId"]}`, datasetUpdate);
+    });
   });
   
   app.get("/ping", (req, res) => {
