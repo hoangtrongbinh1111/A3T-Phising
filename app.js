@@ -61,7 +61,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
   _io.on("connection", (socket) => {
     //=======TRAIN======
     socket.on("start_train_model", async (data) => {
-      const {config} = await Lab.findOne({ labId: data.labId });
+      const {config, logId} = await Lab.findOne({ labId: data.labId });
       const modelData = await Model.findOne({ modelId: config.modelId });
       const datasetData = await Dataset.findOne({ datasetId: config.datasetId });
       const trainId = data.sid;
