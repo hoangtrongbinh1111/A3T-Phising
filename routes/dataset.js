@@ -8,5 +8,5 @@ router.post("/create", cleanBody, datasetController.createDataset);
 router.get("/read",cleanBody, datasetController.readDataset);
 router.patch("/update",cleanBody, datasetController.updateDataset);
 router.delete("/delete",cleanBody, datasetController.deleteDataset);
-// router.post("/upload", cleanBody, datasetController.uploadDataset);
+router.get("/review", datasetController.reviewDataset);
 module.exports = router;

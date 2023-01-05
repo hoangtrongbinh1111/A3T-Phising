@@ -2,6 +2,7 @@ const Joi = require("joi"); //validate
 require("dotenv").config();
 const { v4: uuid } = require("uuid"); //gen id
 const dataset = require("./Dataset.model");
+const csv=require('csvtojson');
 const {
     responseServerError,
     responseSuccess,
@@ -67,6 +68,27 @@ exports.listDataset = async (req, res) => {
                 last_page: Math.ceil(total / limit),
             },
         });
+    } catch (error) {
+        return responseServerError({ res, err: error.message });
+    }
+};
+
+exports.reviewDataset = async (req, res) => {
+    try {
+        let { datasetId, maxSample } = req.query;
+        const datasetData = await dataset.findOne({ datasetId: datasetId });
+        const csvFilePath= `${datasetData.savePath}/train.csv`;
+        csv()
+            .fromFile(csvFilePath)
+            .then((samplePreview)=>{
+                const listDataSample = samplePreview.slice(0, maxSample ?? 10);
+                return responseSuccessWithData({
+                    res,
+                    data: {
+                        listDataSample
+                    },
+                });
+            })
     } catch (error) {
         return responseServerError({ res, err: error.message });
     }
