@@ -2,6 +2,7 @@ const MALICIOUS = 1;
 const UNMALICIOUS = 0;
 const LAB_FOLDER = "modelDir";  
 const DATA_FOLDER = "datasetDir";
+const MODEL_SAMPLE_FOLDER = "sampleDir";
 const LAB_SUBFOLDER = {
     trainLogPath: "log_train",
     testLogPath: "log_test",
@@ -19,6 +20,7 @@ module.exports = {
     MALICIOUS,
     UNMALICIOUS,
     DATA_SUBFOLDER,
+    MODEL_SAMPLE_FOLDER,
     LAB_FOLDER,
     LAB_SUBFOLDER
 };
