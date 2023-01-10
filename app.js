@@ -9,10 +9,12 @@ const Lab = require("./src/lab/lab.model");
 const Log = require("./src/log/log.model");
 const Model = require("./src/model/model.model");
 const Dataset = require("./src/dataset/Dataset.model");
+const Sample = require("./src/sample/Sample.model");
 const { v4: uuid } = require("uuid"); //gen id
-const { DATA_FOLDER,DATA_SUBFOLDER} = require('./helpers/constant')
+const { DATA_FOLDER,DATA_SUBFOLDER, MODEL_SAMPLE_FOLDER} = require('./helpers/constant')
 const {getDir,removeDir} = require('./helpers/file')
 const dataRoutes = require("./routes/dataset");
+const sampleRoutes = require("./routes/sample");
 const labRoutes = require("./routes/lab");
 const authRoutes = require("./routes/users");
 const adminRoutes = require("./routes/admin");
@@ -156,6 +158,36 @@ app.use(bodyParser.urlencoded({ extended: true }));
       );
     });
     //=======INFERED======
+
+    //=======COMPARE======
+    socket.on("start_compare_model", async (data) => {
+      const {config, logId} = await Lab.findOne({ labId: data.labId });
+      const modelData = await Model.findOne({ modelId: config.modelId });
+      const datasetData = await Dataset.findOne({ datasetId: config.datasetId });
+      const sampleData = await Sample.findOne({ sampleId: data.sampleId });
+      const compareId = data.sid;
+      await _io.emit(`start_comparing`, {
+        test_data_dir: `${datasetData.savePath}/test.csv`, 
+        ckpt_number: data.epoch_selected,
+        sample_model_dir: sampleData.savePath,
+        model_type: modelData.modelName,
+        labId: data.labId,
+        compareId: compareId
+      });
+      
+    });
+
+    socket.on(`receive_comparing_process`, async (data) => {
+      const dataRecieve = JSON.parse(data);
+      await _io.emit(`send_comparing_result_${dataRecieve["labId"]}`, dataRecieve);
+      // let {logId} = await Lab.findOne({ labId: dataRecieve["labId"] });
+      // await Log.findOneAndUpdate(
+      //   { logId: logId, "testHistory.testId": dataRecieve["testId"] }, 
+      //   { $push: { "testHistory.$.testProcess": dataRecieve["response"] } }
+      // );
+    });
+    //=======COMPARED======
+
     //=======DATASET INFORMATION======
     socket.on("start_update_detail_dataset", async (data) => {
       const {config} = await Lab.findOne({ labId: data.labId });
@@ -186,11 +218,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
     });
   });
 
-
   // SET STORAGE, UPLOAD DATA
   const datasetCreateSchema = Joi.object().keys({
     userUpload: Joi.string().required(),
     dataName: Joi.string().required(),
+  });
+  const sampleCreateSchema = Joi.object().keys({
+    userUpload: Joi.string().required(),
+    sampleName: Joi.string().required(),
   });
   const whitelist = [
     'text/csv'
@@ -214,6 +249,21 @@ app.use(bodyParser.urlencoded({ extended: true }));
     // }
   });
   const upload = multer({ storage: storage }).array("files", 2);
+
+  // Upload model test
+  const storageSample = multer.diskStorage({
+    destination: async function (req, file, cb) {
+      const result = sampleCreateSchema.validate(req.body);
+      if (result.error) {
+        return cb(new Error(result.error.message));
+      }
+      cb(null, `./${MODEL_SAMPLE_FOLDER}/${req.query.sampleId}`);
+    },
+    filename: function (req, file, cb) {
+      cb(null, file.originalname);
+    }
+  });
+  const uploadSample = multer({ storage: storageSample }).array("files", 20);
 
   app.post("/api/v1/dataset/upload", async (req, res, next) => {
     
@@ -250,6 +300,40 @@ app.use(bodyParser.urlencoded({ extended: true }));
     }
   });
 
+  app.post("/api/v1/sample/upload", async (req, res, next) => {
+    
+    try {
+      const sampleId = uuid();
+      let savePath = `/${MODEL_SAMPLE_FOLDER}/${sampleId}`;
+      // create folder
+      const root = path.resolve("./");
+      getDir({ dir: root + `/${MODEL_SAMPLE_FOLDER}/${sampleId}` });
+      savePath = `./${MODEL_SAMPLE_FOLDER}/${sampleId}`;
+
+      // done create
+      req.query.sampleId = sampleId;
+      uploadSample(req,res,async function(err) {
+        if(err) {
+          return responseServerError({ res, err: "Error uploading file." });
+        }
+        const { userUpload, sampleName } = req.body;
+        //end create folder
+        const data = {
+            sampleId,
+            sampleName,
+            userUpload,
+            savePath
+        };
+        const newSample = new Sample(data);
+        await newSample.save();
+
+        return responseSuccess({ res });
+    });
+    } catch (err) {
+      return responseServerError({ res, err: "Error uploading file1." });
+    }
+  });
+
   app.use("/api/v1/data", dataRoutes);
   app.use("/api/v1/lab", labRoutes);
   app.use("/api/v1/users", authRoutes);
@@ -257,6 +341,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
   app.use("/api/v1/log", logRoutes);
   app.use("/api/v1/blacklist", blacklistRoutes);
   app.use("/api/v1/model", modelRoutes);
+  app.use("/api/v1/sample", sampleRoutes);
+
 
   const PORT = process.env.PORT || 8686;
   server.listen(PORT, "0.0.0.0", () => {
