@@ -160,15 +160,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
     //=======INFERED======
 
     //=======COMPARE======
-    socket.on("start_compare_model", async (data) => {
+    socket.on("start_compare_model_phase_testing", async (data) => {
       const {config, logId} = await Lab.findOne({ labId: data.labId });
       const modelData = await Model.findOne({ modelId: config.modelId });
       const datasetData = await Dataset.findOne({ datasetId: config.datasetId });
       const sampleData = await Sample.findOne({ sampleId: data.sampleId });
       const compareId = data.sid;
-      await _io.emit(`start_comparing`, {
+      await _io.emit(`start_comparing_phase_testing`, {
         test_data_dir: `${datasetData.savePath}/test.csv`, 
-        ckpt_number: data.epoch_selected,
         sample_model_dir: sampleData.savePath,
         model_type: modelData.modelName,
         labId: data.labId,
@@ -177,14 +176,29 @@ app.use(bodyParser.urlencoded({ extended: true }));
       
     });
 
-    socket.on(`receive_comparing_process`, async (data) => {
+    socket.on(`receive_comparing_process_phase_infering`, async (data) => {
       const dataRecieve = JSON.parse(data);
-      await _io.emit(`send_comparing_result_${dataRecieve["labId"]}`, dataRecieve);
-      // let {logId} = await Lab.findOne({ labId: dataRecieve["labId"] });
-      // await Log.findOneAndUpdate(
-      //   { logId: logId, "testHistory.testId": dataRecieve["testId"] }, 
-      //   { $push: { "testHistory.$.testProcess": dataRecieve["response"] } }
-      // );
+      await _io.emit(`send_comparing_result_phase_infering_${dataRecieve["labId"]}`, dataRecieve);
+    });
+
+    socket.on("start_compare_model_phase_infering", async (data) => {
+      const {config, logId} = await Lab.findOne({ labId: data.labId });
+      const modelData = await Model.findOne({ modelId: config.modelId });
+      const sampleData = await Sample.findOne({ sampleId: data.sampleId });
+      const compareId = data.sid;
+      await _io.emit(`start_comparing_phase_infering`, {
+        url_sample: data.url, 
+        sample_model_dir: sampleData.savePath,
+        model_type: modelData.modelName,
+        labId: data.labId,
+        compareId: compareId
+      });
+      
+    });
+
+    socket.on(`receive_comparing_process_phase_testing`, async (data) => {
+      const dataRecieve = JSON.parse(data);
+      await _io.emit(`send_comparing_result_phase_testing_${dataRecieve["labId"]}`, dataRecieve);
     });
     //=======COMPARED======
 
